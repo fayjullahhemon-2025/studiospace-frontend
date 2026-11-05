@@ -12,7 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { signIn, signUp } from "@/lib/auth-client";
+import { signIn, signOut, signUp } from "@/lib/auth-client";
 
 const DEFAULT_AVATAR_PREVIEW =
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80";
@@ -117,10 +117,14 @@ export function SignupForm() {
       return;
     }
 
+    await signOut();
     setStatus({
       kind: "success",
-      message: "Account created! You can now sign in.",
+      message: "Account created! Redirecting you to sign in…",
     });
+    window.setTimeout(() => {
+      window.location.assign("/login");
+    }, 700);
   }
 
   return (
