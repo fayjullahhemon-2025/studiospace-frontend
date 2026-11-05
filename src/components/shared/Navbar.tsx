@@ -21,7 +21,7 @@ import { signOut, useSession } from "@/lib/auth-client";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/studios", label: "Explore Studios" },
-  { href: "/how-it-works", label: "How It Works" },
+  { href: "/#howitworks", label: "How It Works" },
   { href: "/about", label: "About Us" },
 ];
 const accountLinks = [
@@ -31,6 +31,9 @@ const accountLinks = [
   { href: "/bookings", label: "My Bookings", Icon: CalendarCheck },
 ];
 function isActivePath(pathname: string, href: string): boolean {
+  if (href.startsWith("/#")) {
+    return false;
+  }
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 function linkClasses(active: boolean): string {

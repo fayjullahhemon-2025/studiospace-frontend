@@ -77,7 +77,7 @@ function LinkedInIcon({ className }: { className?: string }) {
 const quickLinks = [
   { href: "/", label: "Home" },
   { href: "/studios", label: "Explore Studios" },
-  { href: "/how-it-works", label: "How It Works" },
+  { href: "/#howitworks", label: "How It Works" },
   { href: "/about", label: "About Us" },
   { href: "/studios/new", label: "List Your Studio" },
   { href: "/pricing", label: "Pricing & Plans" },
