@@ -4,7 +4,6 @@ import { ArrowRight, Heart, RefreshCw, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/lib/api";
 
 export type Studio = {
   _id: string;
@@ -19,53 +18,69 @@ export type Studio = {
   featured?: boolean;
 };
 
+const SKELETON_KEYS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5", "sk-6"];
+
 export function FeaturedStudios() {
   const [studios, setStudios] = useState<Studio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-
-  async function loadStudios() {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Fetch dynamic studio list with limit=6
-      const response = await fetch(`${API_BASE_URL}/studios?limit=6`);
-      if (!response.ok) {
-        throw new Error(`Failed to load studios (Status ${response.status})`);
-      }
-
-      const json: unknown = await response.json();
-      const rawList: Studio[] = Array.isArray(json)
-        ? json
-        : typeof json === "object" &&
-          json !== null &&
-          Array.isArray((json as { data?: unknown[] }).data)
-          ? ((json as { data: Studio[] }).data ?? [])
-          : [];
-
-      // Sort by rating (top-rated) and ensure exactly 6 items
-      const topStudios = rawList
-        .slice()
-        .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-        .slice(0, 6);
-
-      setStudios(topStudios);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to connect to the studio service.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    let isMounted = true;
+    void reloadKey;
+
+    async function loadStudios() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch dynamic studio list using limit=6
+        const response = await fetch("http://localhost:5000/studios?limit=6");
+        if (!response.ok) {
+          throw new Error(`Failed to load studios (Status ${response.status})`);
+        }
+
+        const json: unknown = await response.json();
+        const rawList: Studio[] = Array.isArray(json)
+          ? json
+          : typeof json === "object" &&
+              json !== null &&
+              Array.isArray((json as { data?: unknown[] }).data)
+            ? ((json as { data: Studio[] }).data ?? [])
+            : [];
+
+        // Sort by rating (top-rated) and ensure top 6
+        const topStudios = rawList
+          .slice()
+          .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+          .slice(0, 6);
+
+        if (isMounted) {
+          setStudios(topStudios);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to connect to the studio service.",
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
     loadStudios();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [reloadKey]);
 
   function toggleFavorite(id: string) {
     setFavorites((prev) => ({
@@ -104,9 +119,9 @@ export function FeaturedStudios() {
         {/* Loading Skeletons */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {Array.from({ length: 6 }).map((_, idx) => (
+            {SKELETON_KEYS.map((key) => (
               <div
-                key={`skeleton-${idx}`}
+                key={key}
                 className="flex flex-col rounded-2xl border border-border/80 bg-card p-3.5 shadow-2xs"
               >
                 <div className="aspect-[16/10] w-full animate-pulse rounded-xl bg-muted" />
@@ -131,7 +146,7 @@ export function FeaturedStudios() {
             <p className="text-sm font-medium text-destructive">{error}</p>
             <button
               type="button"
-              onClick={loadStudios}
+              onClick={() => setReloadKey((k) => k + 1)}
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-destructive/10 px-4 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20"
             >
               <RefreshCw className="size-3.5" />
@@ -179,10 +194,11 @@ export function FeaturedStudios() {
                     className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full bg-white/85 dark:bg-black/70 backdrop-blur-md shadow-xs transition-transform hover:scale-110 active:scale-95"
                   >
                     <Heart
-                      className={`size-4 transition-colors ${favorites[studio._id]
-                        ? "fill-red-500 text-red-500"
-                        : "text-neutral-700 dark:text-neutral-300"
-                        }`}
+                      className={`size-4 transition-colors ${
+                        favorites[studio._id]
+                          ? "fill-red-500 text-red-500"
+                          : "text-neutral-700 dark:text-neutral-300"
+                      }`}
                     />
                   </button>
                 </div>
