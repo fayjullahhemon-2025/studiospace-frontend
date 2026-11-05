@@ -4,7 +4,9 @@ import {
   AlertCircle,
   AlertTriangle,
   Calendar,
+  CalendarX,
   Clock,
+  Compass,
   DollarSign,
   ExternalLink,
   Loader2,
@@ -19,6 +21,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import EmptyState from "@/components/shared/EmptyState";
 import { useSession } from "@/lib/auth-client";
 
 interface Booking {
@@ -268,26 +271,27 @@ export default function MyBookingsPage() {
 
         {/* Empty State */}
         {!loading && !error && bookings.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-border bg-muted/20 p-12 sm:p-16 text-center">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-brand/10 text-brand mb-4">
-              <Calendar className="size-7" />
-            </div>
-            <h2 className="text-xl font-bold tracking-tight text-foreground">
-              No Studio Bookings Found
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-md mx-auto leading-relaxed">
-              You haven&apos;t reserved any creative stages yet. Find the ideal
-              light, sound, or workspace for your next production.
-            </p>
-            <div className="mt-6">
-              <Link
-                href="/studios"
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-brand px-6 text-sm font-semibold text-white shadow-sm hover:bg-brand-strong transition-colors"
-              >
-                Browse Curated Studios
-              </Link>
-            </div>
-          </div>
+          <EmptyState
+            icon={CalendarX}
+            badge="Schedule Clear"
+            title="No Studio Bookings Found"
+            description="You haven't reserved any creative stages or production workspaces yet. Explore vetted photography lofts, cinematic sound stages, and podcast rooms with instant confirmation."
+            tips={[
+              "Browse top-rated photography lofts, sound stages, and audio suites",
+              "Select custom shoot hours with instant double-booking prevention",
+              "Enjoy transparent pricing with security deposits and host equipment included",
+            ]}
+            primaryAction={{
+              label: "Browse Curated Studios",
+              icon: Compass,
+              href: "/studios",
+            }}
+            secondaryAction={{
+              label: "How Booking Works",
+              icon: Sparkles,
+              href: "/#howitworks",
+            }}
+          />
         )}
 
         {/* Bookings List */}

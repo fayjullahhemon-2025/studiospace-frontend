@@ -4,8 +4,11 @@ import {
   ArrowRight,
   Heart,
   MapPin,
+  Plus,
   RefreshCw,
+  RotateCcw,
   Search,
+  SearchX,
   SlidersHorizontal,
   Star,
   X,
@@ -13,6 +16,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
+import EmptyState from "@/components/shared/EmptyState";
 import {
   type FilterState,
   StudioFilters,
@@ -309,16 +313,44 @@ export function StudiosPageClient() {
 
             {/* Empty State */}
             {!loading && !error && filtered.length === 0 && (
-              <div className="rounded-2xl border border-border/70 bg-muted/30 p-12 text-center">
-                <p className="text-base font-semibold text-foreground">
-                  No studios match your filters.
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Try adjusting your search criteria or clearing filters.
-                </p>
-                <button
-                  type="button"
-                  onClick={() =>
+              <EmptyState
+                icon={SearchX}
+                badge={
+                  filters.search
+                    ? `Query: "${filters.search}"`
+                    : filters.category
+                      ? `Category: ${filters.category}`
+                      : "0 Matches Found"
+                }
+                title={
+                  filters.search
+                    ? `No Studios Matching "${filters.search}"`
+                    : filters.category
+                      ? `No ${filters.category} Available`
+                      : "No Studios Match Your Criteria"
+                }
+                description={
+                  filters.search
+                    ? "We couldn't find any production stages matching your search keywords. Try adjusting your search term, checking for typos, or broadening your criteria."
+                    : "No spaces matched the current combination of category, price, and rating filters. Try broadening your criteria or reset all filters to view our full catalog."
+                }
+                tips={
+                  filters.search
+                    ? [
+                        "Check for spelling errors or alternative terms (e.g., 'photo' instead of 'photographer')",
+                        "Search by city, neighborhood, or specific equipment",
+                        "Clear active filters to expand your search across all categories",
+                      ]
+                    : [
+                        "Widen your hourly rate range to view more options",
+                        "Lower the minimum rating filter",
+                        "Explore other creative disciplines like Sound Stages or Music Suites",
+                      ]
+                }
+                primaryAction={{
+                  label: "Clear All Filters",
+                  icon: RotateCcw,
+                  onClick: () =>
                     setFilters({
                       category: "",
                       minPrice: 0,
@@ -326,14 +358,14 @@ export function StudiosPageClient() {
                       minRating: 0,
                       search: "",
                       sort: "rating",
-                    })
-                  }
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2 text-xs font-semibold text-white hover:bg-brand-strong"
-                >
-                  <X className="size-3.5" />
-                  Clear Filters
-                </button>
-              </div>
+                    }),
+                }}
+                secondaryAction={{
+                  label: "Host Your Space",
+                  icon: Plus,
+                  href: "/add-studio",
+                }}
+              />
             )}
 
             {/* Studio Cards Grid */}

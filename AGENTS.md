@@ -131,3 +131,48 @@ The homepage coordinates four modular, responsive components:
 - **Unique Keys**: Never use array index (`idx`) as keys in mapped JSX lists (e.g. `key={idx}`); use static string arrays for skeletons or entity `_id` values.
 - **Hook Dependencies**: Ensure all variables referenced inside `useEffect` are either declared inside the effect, included in the dependency array, or intentionally used to prevent stale closures.
 - Always run `npx @biomejs/biome check --write` followed by `npm run lint` before committing changes.
+
+---
+
+## 7. Private Routes & Host Workflows
+
+- **`AddStudio` (`src/app/add-studio/page.tsx`)**:
+  - Private route (guarded by better-auth session check; redirects unauthenticated visitors to `/login?callbackUrl=/add-studio`).
+  - Comprehensive studio creation form: Title, Category (Select), Hourly Rate ($), Security Deposit ($), Max Capacity, Location/Address, Image URL (with live preview), Amenities tags (24 options), Detailed Overview (with character counter), and Read-only Host Email & Name.
+  - Submits to `POST http://localhost:5000/studios`, triggers success toast, and redirects to `/my-listings`.
+- **`MyListings` (`src/app/my-listings/page.tsx`)**:
+  - Private route showing user-owned spaces (`GET /studios?ownerEmail=<email>`).
+  - Toggle between responsive Card view and dense Table view.
+  - Inline Update modal (`PATCH /studios/:id`) and Delete action with `DeleteConfirmModal` (`DELETE /studios/:id`) accompanied by toast feedback.
+- **`MyBookings` (`src/app/my-bookings/page.tsx`)**:
+  - Private route displaying user bookings (`GET /bookings/:email`).
+  - Status badges (`Confirmed`, `Pending`, `Cancelled`).
+  - Cancel action (for Pending bookings via `PATCH /bookings/:id/cancel`) and Delete action (`DELETE /bookings/:id`) with modal confirmation and toast notifications.
+
+---
+
+## 8. UX, Loading States & Feedback Standards
+
+- **Loading State Requirement**:
+  - Root `src/app/loading.tsx` features `BrandedSpinner` with orbital rotating ring, pulsing Aperture icon, and ambient soundstage glow for route transitions.
+  - Dedicated route-level `src/app/studios/loading.tsx` renders `StudioSkeleton` providing immediate feedback during studio catalog browsing.
+  - Asynchronous data fetches across listings, catalog, and bookings display branded pulse skeleton loaders.
+- **Not-Found Page Requirement (`src/app/not-found.tsx`)**:
+  - Custom 404 page featuring an SVG creative studio set illustration (production camera on tripod, overhead spotlight cones, director's chair, clapperboard with "SCENE 404 • TAKE 1").
+  - Clear narrative headline: *"Cut! This Scene Doesn't Exist."*
+  - Direct, accessible **"Return to Home"** primary action button linking back to `/`, plus secondary link to Explore Studios (`/studios`).
+- **Standardized Toast Notifications**:
+  - Powered by `react-toastify` with styles imported in `src/app/layout.tsx` and brand palette tokens applied in `src/app/globals.css`.
+  - Consistent feedback across all CRUD, auth, and booking actions:
+    - Auth: sign-in, registration, Google auth, and logout.
+    - Studios: creation (`POST /studios`), modification (`PATCH /studios/:id`), and deletion (`DELETE /studios/:id`).
+    - Bookings: reservation submission (including 409 double-booking collisions), cancellation (`PATCH /bookings/:id/cancel`), and deletion (`DELETE /bookings/:id`).
+    - Interactions: copy studio link, favorite toggle, and newsletter subscription.
+- **Empty State Standards (`src/components/shared/EmptyState.tsx`)**:
+  - Reusable, brand-aligned empty state component featuring custom icon badge, contextual title, explanatory narrative, actionable troubleshooting tips, and primary + secondary CTA buttons.
+  - Used consistently across:
+    - **Studio Catalog Search (`/studios`)**: Detects empty search queries or unmatched filters, displays suggested query refinements, a "Clear All Filters" reset action, and a secondary "Host Your Space" CTA.
+    - **My Bookings (`/my-bookings`)**: Displays empty reservation slate with "Browse Curated Studios" and "How Booking Works" CTAs.
+    - **My Listings (`/my-listings`)**: Welcomes new hosts with clear revenue proposition, host onboarding tips, and direct "Host Your Space" link to `/add-studio`.
+
+

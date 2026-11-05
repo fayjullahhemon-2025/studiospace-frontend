@@ -131,3 +131,13 @@
     @apply font-sans;
   }
 }
+
+:root {
+  --toastify-color-info: #ff5c1a;
+  --toastify-color-success: #16a34a;
+  --toastify-color-warning: #f59e0b;
+  --toastify-color-error: #ef4444;
+  --toastify-font-family: var(--font-sans);
+  --toastify-toast-bd-radius: 16px;
+  --toastify-z-index: 99999;
+}

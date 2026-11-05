@@ -2,6 +2,7 @@
 
 import {
   AlertCircle,
+  Compass,
   DollarSign,
   Edit,
   Eye,
@@ -21,6 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import EmptyState from "@/components/shared/EmptyState";
 import DeleteConfirmModal from "@/components/studios/DeleteConfirmModal";
 import { useSession } from "@/lib/auth-client";
 
@@ -294,37 +296,37 @@ export default function MyListingsPage() {
 
           {/* Empty State */}
           {!loading && !error && studios.length === 0 && (
-            <div className="rounded-3xl border border-dashed border-border bg-muted/20 p-12 sm:p-16 text-center">
-              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-brand/10 text-brand mb-4">
-                <MapPin className="size-7" />
-              </div>
-              <h2 className="text-xl font-bold tracking-tight text-foreground">
-                No Spaces Listed Yet
-              </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-md mx-auto leading-relaxed">
-                You haven&apos;t listed any production studios under your
-                account (
-                <span className="font-medium text-foreground">
-                  {session?.user?.email}
-                </span>
-                ). Turn your creative loft, audio room, or stage into revenue.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                <Link
-                  href="/add-studio"
-                  className="inline-flex h-11 items-center gap-2 rounded-full bg-brand px-6 text-sm font-semibold text-white shadow-sm hover:bg-brand-strong transition-colors"
-                >
-                  <Plus className="size-4" />
-                  <span>Host Your Space</span>
-                </Link>
-                <Link
-                  href="/studios"
-                  className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
-                >
-                  Browse Catalog
-                </Link>
-              </div>
-            </div>
+            <EmptyState
+              icon={MapPin}
+              badge="Host Management"
+              title="No Spaces Listed Yet"
+              description={
+                <>
+                  You haven&apos;t listed any production studios under your
+                  account (
+                  <span className="font-medium text-foreground">
+                    {session?.user?.email}
+                  </span>
+                  ). Turn your vacant creative loft, audio room, or soundstage
+                  into reliable booking revenue.
+                </>
+              }
+              tips={[
+                "List photo lofts, podcast booths, sound stages, or music studios",
+                "Set custom hourly rates, security deposits, and amenity tags",
+                "Manage bookings and update listing details in real time",
+              ]}
+              primaryAction={{
+                label: "Host Your Space",
+                icon: Plus,
+                href: "/add-studio",
+              }}
+              secondaryAction={{
+                label: "Browse Catalog",
+                icon: Compass,
+                href: "/studios",
+              }}
+            />
           )}
 
           {/* Active Studios: Card View */}
