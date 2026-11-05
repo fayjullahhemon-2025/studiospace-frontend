@@ -7,6 +7,7 @@ import {
   Edit,
   Eye,
   Grid,
+  Image as ImageIcon,
   List,
   Loader2,
   MapPin,
@@ -15,6 +16,7 @@ import {
   Sparkles,
   Star,
   Trash2,
+  UploadCloud,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -60,11 +62,13 @@ export default function MyListingsPage() {
   // Update State
   const [editingStudio, setEditingStudio] = useState<Studio | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [updateFormData, setUpdateFormData] = useState({
     title: "",
     hourlyRate: 0,
     category: "",
     location: "",
+    image: "",
     description: "",
   });
 
@@ -153,8 +157,52 @@ export default function MyListingsPage() {
       hourlyRate: studio.hourlyRate,
       category: studio.category,
       location: studio.location,
+      image: studio.image || "",
       description: studio.description || "",
     });
+  };
+
+  const handleImageFile = async (file: File) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (PNG, JPG, WEBP, AVIF, GIF).");
+      return;
+    }
+
+    if (file.size > 32 * 1024 * 1024) {
+      toast.error("Image file size must be less than 32MB.");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const token = await getTokenFromClient();
+      const fd = new FormData();
+      fd.append("image", file);
+
+      const res = await fetch("http://localhost:5000/upload", {
+        method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Failed to upload image to ImgBB.");
+        return;
+      }
+
+      const uploadedUrl = data.data?.url || data.imageUrl;
+      setUpdateFormData((prev) => ({ ...prev, image: uploadedUrl }));
+      toast.success("Image uploaded to ImgBB successfully!");
+    } catch {
+      toast.error("Network error: Could not reach image upload service.");
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
@@ -702,6 +750,77 @@ export default function MyListingsPage() {
                     className="h-10 w-full rounded-xl border border-input bg-background pl-9 pr-3 text-xs outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20"
                   />
                 </div>
+              </div>
+
+              {/* Cover Image Upload / URL */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label
+                    htmlFor="edit-image"
+                    className="block text-xs font-semibold text-foreground"
+                  >
+                    Cover Image
+                  </label>
+                  <label
+                    htmlFor="edit-image-file"
+                    className={`inline-flex items-center gap-1 text-[11px] font-semibold text-brand hover:underline cursor-pointer ${
+                      isUploadingImage ? "opacity-50 pointer-events-none" : ""
+                    }`}
+                  >
+                    <UploadCloud className="size-3.5" />
+                    <span>
+                      {isUploadingImage
+                        ? "Uploading to ImgBB..."
+                        : "Upload New (ImgBB)"}
+                    </span>
+                    <input
+                      id="edit-image-file"
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingImage}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageFile(file);
+                      }}
+                      className="sr-only"
+                    />
+                  </label>
+                </div>
+                <div className="relative">
+                  <ImageIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <input
+                    id="edit-image"
+                    type="url"
+                    placeholder="https://i.ibb.co/... or https://images.unsplash.com/..."
+                    value={updateFormData.image}
+                    onChange={(e) =>
+                      setUpdateFormData((prev) => ({
+                        ...prev,
+                        image: e.target.value,
+                      }))
+                    }
+                    className="h-10 w-full rounded-xl border border-input bg-background pl-9 pr-3 text-xs outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20 font-mono"
+                  />
+                </div>
+                {updateFormData.image && (
+                  <div className="mt-2 relative h-24 w-full overflow-hidden rounded-lg border border-border bg-muted/20">
+                    {/* biome-ignore lint/performance/noImgElement: preview only */}
+                    <img
+                      src={updateFormData.image}
+                      alt="Studio preview"
+                      className="size-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display =
+                          "none";
+                      }}
+                    />
+                    <div className="absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white">
+                      {updateFormData.image.includes("ibb.co")
+                        ? "ImgBB Hosted"
+                        : "Preview"}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

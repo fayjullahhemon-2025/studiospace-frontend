@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   Building2,
+  CheckCircle2,
   CheckSquare,
   DollarSign,
   FileText,
@@ -10,8 +11,10 @@ import {
   Loader2,
   MapPin,
   Sparkles,
+  UploadCloud,
   Users,
   Wifi,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -110,6 +113,8 @@ export default function AddStudioPage() {
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageTab, setImageTab] = useState<"upload" | "url">("upload");
 
   // ── Auth guard ──
   useEffect(() => {
@@ -133,6 +138,49 @@ export default function AddStudioPage() {
     }));
   }
 
+  async function handleImageFile(file: File) {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (PNG, JPG, WEBP, AVIF, GIF).");
+      return;
+    }
+
+    if (file.size > 32 * 1024 * 1024) {
+      toast.error("Image file size must be less than 32MB.");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const token = await getTokenFromClient();
+      const fd = new FormData();
+      fd.append("image", file);
+
+      const res = await fetch("http://localhost:5000/upload", {
+        method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.message || "Failed to upload image to ImgBB.");
+        return;
+      }
+
+      const uploadedUrl = data.data?.url || data.imageUrl;
+      setField("image", uploadedUrl);
+      toast.success("Image uploaded to ImgBB successfully!");
+    } catch {
+      toast.error("Network error: Could not reach image upload service.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
   // ── Submit ──
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -143,6 +191,10 @@ export default function AddStudioPage() {
     }
     if (!form.category) {
       toast.error("Please select a category.");
+      return;
+    }
+    if (!form.image.trim()) {
+      toast.error("Please upload a cover image or enter an image URL.");
       return;
     }
 
@@ -392,46 +444,157 @@ export default function AddStudioPage() {
 
           {/* ══ SECTION 3 — Media ════════════════════════════════════════════ */}
           <div className="rounded-2xl border border-border bg-card p-6 shadow-2xs">
-            <div className="mb-5 flex items-center gap-2 text-foreground">
-              <ImageIcon className="size-4.5 text-brand" />
-              <h2 className="text-base font-bold tracking-tight">
-                Cover Image
-              </h2>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-foreground">
+                <ImageIcon className="size-4.5 text-brand" />
+                <h2 className="text-base font-bold tracking-tight">
+                  Cover Image
+                  <span className="ml-1 text-red-500">*</span>
+                </h2>
+              </div>
+              <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setImageTab("upload")}
+                  className={`rounded-lg px-2.5 py-1 font-semibold transition-colors ${
+                    imageTab === "upload"
+                      ? "bg-background text-brand shadow-2xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Upload File (ImgBB)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageTab("url")}
+                  className={`rounded-lg px-2.5 py-1 font-semibold transition-colors ${
+                    imageTab === "url"
+                      ? "bg-background text-brand shadow-2xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Direct URL
+                </button>
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="image" className={labelCls()}>
-                Image URL
-                <span className="ml-0.5 text-red-500">*</span>
-              </label>
-              <input
-                id="image"
-                type="url"
-                required
-                placeholder="https://images.unsplash.com/photo-…"
-                value={form.image}
-                onChange={(e) => setField("image", e.target.value)}
-                className={inputCls()}
-              />
-              <p className="mt-1.5 text-[11px] text-muted-foreground">
-                Paste a direct image URL (Unsplash, your CDN, etc.). Use
-                landscape ratio for best results.
-              </p>
-            </div>
+            {imageTab === "upload" ? (
+              <div className="space-y-3">
+                <label
+                  htmlFor="studio-image-file"
+                  className={`group relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-pointer ${
+                    isUploadingImage
+                      ? "border-brand/60 bg-brand/5 pointer-events-none"
+                      : "border-border hover:border-brand/50 hover:bg-muted/30"
+                  }`}
+                >
+                  <input
+                    id="studio-image-file"
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploadingImage}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageFile(file);
+                    }}
+                    className="sr-only"
+                  />
+                  {isUploadingImage ? (
+                    <div className="flex flex-col items-center py-4">
+                      <Loader2 className="size-8 animate-spin text-brand" />
+                      <p className="mt-2 text-sm font-semibold text-foreground">
+                        Uploading to ImgBB...
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Processing high-res image and generating public CDN link
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center py-2">
+                      <div className="mb-2 flex size-12 items-center justify-center rounded-2xl bg-brand/10 text-brand group-hover:scale-105 transition-transform">
+                        <UploadCloud className="size-6" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">
+                        Click to upload or drag and drop
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        PNG, JPG, WEBP, AVIF or GIF (up to 32MB)
+                      </p>
+                      <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                        <Sparkles className="size-3 text-brand" /> Hosted
+                        securely via ImgBB API
+                      </span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="image" className={labelCls()}>
+                  Image URL
+                </label>
+                <input
+                  id="image"
+                  type="url"
+                  placeholder="https://images.unsplash.com/photo-… or https://i.ibb.co/…"
+                  value={form.image}
+                  onChange={(e) => setField("image", e.target.value)}
+                  className={inputCls()}
+                />
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  Paste a direct image URL (ImgBB, Unsplash, etc.). Use
+                  landscape ratio for best results.
+                </p>
+              </div>
+            )}
 
             {/* Live Preview */}
             {form.image && (
-              <div className="mt-4 overflow-hidden rounded-xl border border-border">
-                {/* biome-ignore lint/performance/noImgElement: preview only */}
-                <img
-                  src={form.image}
-                  alt="Cover preview"
-                  className="aspect-video w-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display =
-                      "none";
-                  }}
-                />
+              <div className="mt-4 overflow-hidden rounded-xl border border-border bg-muted/20">
+                <div className="relative aspect-video w-full">
+                  {/* biome-ignore lint/performance/noImgElement: preview only */}
+                  <img
+                    src={form.image}
+                    alt="Cover preview"
+                    className="size-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display =
+                        "none";
+                    }}
+                  />
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-md px-3 py-1 text-[11px] font-medium text-white shadow-sm">
+                    <CheckCircle2 className="size-3.5 text-emerald-400" />
+                    <span>
+                      {form.image.includes("ibb.co")
+                        ? "Hosted on ImgBB"
+                        : "Image Connected"}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setField("image", "")}
+                    className="absolute top-3 right-3 flex size-7 items-center justify-center rounded-full bg-black/70 text-white/80 hover:text-white hover:bg-black/90 transition-colors"
+                    title="Remove image"
+                    aria-label="Remove image"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between px-3 py-2 text-xs border-t border-border">
+                  <span className="truncate max-w-sm text-muted-foreground font-mono text-[11px]">
+                    {form.image}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(form.image);
+                      toast.info("Image URL copied to clipboard!");
+                    }}
+                    className="text-[11px] font-semibold text-brand hover:underline shrink-0 ml-2"
+                  >
+                    Copy Link
+                  </button>
+                </div>
               </div>
             )}
           </div>
