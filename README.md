@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StudioSpace 🎬 Studio & Production Space Sharing Marketplace
 
-## Getting Started
+**StudioSpace** is a high-performance peer-to-peer (P2P) marketplace platform designed for content creators, photographers, filmmakers, podcasters, and musicians. Studio owners and hosts can list creative workspaces—ranging from cyclorama wall photography studios and cinema sound stages to acoustic podcast lounges, vocal recording suites, and art workshops. Creators can easily search, inspect dynamic hourly specifications, check availability with overlap protection, and reserve studio slots with transparent pricing and real-time booking management.
 
-First, run the development server:
+---
 
+## 🔗 Project Links
+
+* **Client Live Site URL:** [https://studiospace-platform.vercel.app](https://studiospace-platform.vercel.app) *(Replace with your actual deployment link)*
+* **Client GitHub Repository:** [https://github.com/your-username/studiospace-client](https://github.com/your-username/studiospace-client) *(Replace with your client repository link)*
+* **Server GitHub Repository:** [https://github.com/your-username/studiospace-server](https://github.com/your-username/studiospace-server) *(Replace with your server repository link)*
+
+---
+
+## ✨ Key Features & Highlights
+
+1. **P2P Workspace Marketplace & Category Filtering:** Search, filter, and inspect studios across specialized production categories (`Photo Studios`, `Sound Stages`, `Podcast Lounges`, `Music Suites`, `Art Workshops`) with real-time query support.
+2. **Double-Booking Collision Prevention (Challenge #2):** Smart MongoDB server-side validation algorithm that automatically prevents dynamic hourly slot overlaps for active `Confirmed` or `Pending` reservations.
+3. **Secure Auth with HTTPOnly JWT Cookies (Challenge #1):** Full authentication system supporting email/password registration with strict validation rules ($\ge 6$ chars, 1 uppercase, 1 lowercase), Google OAuth, and secure token storage in HTTPOnly Cookies.
+4. **Host Management & Full CRUD Operations:** Dynamic studio listing management allows studio owners to add, update, and delete their spaces using image upload links (ImgBB/Postimage) and custom modal confirmations.
+5. **Interactive UI & Custom Toast Engine:** Completely responsive layout built with glassmorphism aesthetics, interactive hero carousels, custom branded skeleton loaders, dark/light theme switcher (Challenge #3), custom 404 page, and zero native browser alerts (powered by Sonner/React Hot Toast).
+
+---
+
+## 🛠️ Technology Stack
+
+* **Frontend:** Next.js (App Router), Tailwind CSS, HeroUI / DaisyUI / Shadcn UI, JavaScript / TypeScript, Swiper.js, Lucide / FontAwesome Icons.
+* **Backend:** Node.js, Express.js, MongoDB Native Driver / Mongoose, JavaScript / TypeScript.
+* **Authentication & Security:** BetterAuth / JWT (JSON Web Tokens), HTTPOnly Cookies, CORS Policy.
+* **Storage & Hosting:** MongoDB Atlas Database, ImgBB API (Image Hosting), Vercel (Client Hosting), Render (Server Hosting).
+
+---
+
+## 🧪 Examiner Test Credentials
+
+Use these credentials to evaluate protected routes, host listings, and booking capabilities:
+
+* **Email:** `examiner.test@studiospace.io`
+* **Password:** `Test1234`
+* **Google Social Login:** Accessible via the "Google Account" button on the login modal.
+
+---
+
+## 💻 Local Setup Steps
+
+Follow these steps to set up and run the project on your local machine:
+
+### Prerequisites
+* **Node.js:** v18.x or higher
+* **npm:** v9.x or higher
+* **MongoDB:** Local instance or MongoDB Atlas Connection String
+
+### 1. Client Setup
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clone the client repository
+git clone https://github.com/your-username/studiospace-client.git
+cd studiospace-client
+
+# Install frontend dependencies
+npm install
+
+# Create environment configuration file
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Configure your `.env.local`:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Run the development client server
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. Server Setup
+```bash
+# Clone the server repository
+git clone https://github.com/your-username/studiospace-server.git
+cd studiospace-server
 
-## Learn More
+# Install backend dependencies
+npm install
 
-To learn more about Next.js, take a look at the following resources:
+# Create environment configuration file
+cp .env.example .env
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Configure your `.env`:
+```env
+PORT=5000
+MONGO_CLIENT_URL=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/studioSpaceDB?retryWrites=true&w=majority
+JWT_SECRET=studiospace_secret_jwt_key_2026
+CLIENT_URL=http://localhost:3000
+NODE_ENV=development
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Start the backend server
+npm start
+```
 
-## Deploy on Vercel
+Your client application will be running at `http://localhost:3000` and the server at `http://localhost:5000`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📝 License & Contact
+
+Distributed under the MIT License. Created by [Your Name / Team Name].
