@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import type { StudioDetail } from "@/components/studios/StudioDetailsClient";
@@ -32,6 +33,7 @@ function calculateEndTime(startTime: string, durationHours: number): string {
 
 export function BookingModal({ studio, isOpen, onClose }: BookingModalProps) {
   const { data: session } = useSession();
+  const router = useRouter();
   const [date, setDate] = useState("2026-11-15");
   const [startTime, setStartTime] = useState("10:00");
   const [duration, setDuration] = useState(4);
@@ -100,6 +102,7 @@ export function BookingModal({ studio, isOpen, onClose }: BookingModalProps) {
   const handleDone = () => {
     setIsConfirmed(false);
     onClose();
+    router.push("/my-bookings");
   };
 
   return (
@@ -169,7 +172,7 @@ export function BookingModal({ studio, isOpen, onClose }: BookingModalProps) {
               onClick={handleDone}
               className="w-full h-11 rounded-full bg-brand text-white font-semibold text-sm hover:bg-brand-strong transition-colors"
             >
-              Done & Return to Studio
+              View My Bookings →
             </button>
           </div>
         ) : (
