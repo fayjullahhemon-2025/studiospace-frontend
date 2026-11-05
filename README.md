@@ -6,9 +6,9 @@
 
 ## 🔗 Project Links
 
-* **Client Live Site URL:** [https://studiospace-platform.vercel.app](https://studiospace-platform.vercel.app) *(Replace with your actual deployment link)*
-* **Client GitHub Repository:** [https://github.com/your-username/studiospace-client](https://github.com/your-username/studiospace-client) *(Replace with your client repository link)*
-* **Server GitHub Repository:** [https://github.com/your-username/studiospace-server](https://github.com/your-username/studiospace-server) *(Replace with your server repository link)*
+* **Client Live Site URL:** [https://studiospace-frontend-steel.vercel.app/] 
+* **Client GitHub Repository:** [https://github.com/fayjullahhemon-2025/studiospace-frontend.git]
+* **Server GitHub Repository:** [https://github.com/fayjullahhemon-2025/studiospace-backend.git]
 
 ---
 
@@ -24,7 +24,7 @@
 
 ## 🛠️ Technology Stack
 
-* **Frontend:** Next.js (App Router), Tailwind CSS, HeroUI / DaisyUI / Shadcn UI, JavaScript / TypeScript, Swiper.js, Lucide / FontAwesome Icons.
+* **Frontend:** Next.js (App Router), Tailwind CSS, Shadcn UI, JavaScript / TypeScript, Swiper.js, Lucide / FontAwesome Icons.
 * **Backend:** Node.js, Express.js, MongoDB Native Driver / Mongoose, JavaScript / TypeScript.
 * **Authentication & Security:** BetterAuth / JWT (JSON Web Tokens), HTTPOnly Cookies, CORS Policy.
 * **Storage & Hosting:** MongoDB Atlas Database, ImgBB API (Image Hosting), Vercel (Client Hosting), Render (Server Hosting).
@@ -35,8 +35,8 @@
 
 Use these credentials to evaluate protected routes, host listings, and booking capabilities:
 
-* **Email:** `examiner.test@studiospace.io`
-* **Password:** `Test1234`
+* **Email:** `emon@gmail.com`
+* **Password:** `Emon1234!`
 * **Google Social Login:** Accessible via the "Google Account" button on the login modal.
 
 ---
@@ -102,8 +102,6 @@ npm start
 
 Your client application will be running at `http://localhost:3000` and the server at `http://localhost:5000`.
 
----
 
-## 📝 License & Contact
 
-Distributed under the MIT License. Created by [Your Name / Team Name].
+
