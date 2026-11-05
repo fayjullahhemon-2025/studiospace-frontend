@@ -11,6 +11,7 @@ import {
   MapPin,
   RefreshCw,
   Sparkles,
+  Trash2,
   X,
   XCircle,
 } from "lucide-react";
@@ -68,6 +69,10 @@ export default function MyBookingsPage() {
   // Cancellation State
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  // Deletion State
+  const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (isPending) return;
@@ -143,6 +148,40 @@ export default function MyBookingsPage() {
       toast.error("Network error: Could not cancel reservation.");
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget || !session?.user?.email) return;
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/bookings/${deleteTarget._id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-email": session.user.email,
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast.error(data.message || "Failed to delete booking.");
+        setIsDeleting(false);
+        return;
+      }
+
+      setBookings((prev) => prev.filter((b) => b._id !== deleteTarget._id));
+      toast.success("Booking deleted successfully!");
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Network error: Could not complete booking deletion.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -326,7 +365,7 @@ export default function MyBookingsPage() {
                       <button
                         type="button"
                         onClick={() => setCancelTarget(booking)}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-red-200 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/20 px-3.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-2xs"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 px-3.5 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors shadow-2xs"
                       >
                         <XCircle className="size-3.5" />
                         <span>Cancel</span>
@@ -336,6 +375,17 @@ export default function MyBookingsPage() {
                         Cancelled
                       </span>
                     ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(booking)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-red-200 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/20 px-3.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-2xs"
+                      title="Delete Booking Record"
+                      aria-label="Delete Booking Record"
+                    >
+                      <Trash2 className="size-3.5" />
+                      <span>Delete</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -449,7 +499,9 @@ export default function MyBookingsPage() {
                 <span className="font-semibold text-foreground">
                   &quot;{cancelTarget.studioTitle}&quot;
                 </span>{" "}
-                on {cancelTarget.bookingDate} ({formatTimeString(cancelTarget.startTime)} – {formatTimeString(cancelTarget.endTime)})?
+                on {cancelTarget.bookingDate} (
+                {formatTimeString(cancelTarget.startTime)} –{" "}
+                {formatTimeString(cancelTarget.endTime)})?
               </p>
             </div>
 
@@ -477,6 +529,140 @@ export default function MyBookingsPage() {
                   <>
                     <XCircle className="size-4" />
                     <span>Confirm Cancel</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Booking Confirmation Modal */}
+      {deleteTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div className="relative w-full max-w-md rounded-3xl border border-border bg-card p-6 sm:p-7 shadow-2xl text-foreground">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              disabled={isDeleting}
+              aria-label="Close dialog"
+              className="absolute top-5 right-5 flex size-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:pointer-events-none"
+            >
+              <X className="size-4" />
+            </button>
+
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-600 dark:text-red-400 mb-4">
+              <Trash2 className="size-7" />
+            </div>
+
+            <div className="text-center">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
+                Delete Booking Record?
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Are you sure you want to delete the reservation record for{" "}
+                <span className="font-semibold text-foreground">
+                  &quot;{deleteTarget.studioTitle}&quot;
+                </span>{" "}
+                ({deleteTarget.bookingDate})? This document will be permanently
+                removed from MongoDB.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="flex-1 h-11 rounded-full border border-border bg-muted/40 text-xs sm:text-sm font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="flex-1 h-11 flex items-center justify-center gap-2 rounded-full bg-red-600 text-xs sm:text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-60 shadow-xs"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Deleting…</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="size-4" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Booking Confirmation Modal */}
+      {deleteTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div className="relative w-full max-w-md rounded-3xl border border-border bg-card p-6 sm:p-7 shadow-2xl text-foreground">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              disabled={isDeleting}
+              aria-label="Close dialog"
+              className="absolute top-5 right-5 flex size-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:pointer-events-none"
+            >
+              <X className="size-4" />
+            </button>
+
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-600 dark:text-red-400 mb-4">
+              <Trash2 className="size-7" />
+            </div>
+
+            <div className="text-center">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
+                Delete Booking Record?
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Are you sure you want to delete the reservation record for{" "}
+                <span className="font-semibold text-foreground">
+                  &quot;{deleteTarget.studioTitle}&quot;
+                </span>{" "}
+                ({deleteTarget.bookingDate})? This document will be permanently
+                removed from MongoDB.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="flex-1 h-11 rounded-full border border-border bg-muted/40 text-xs sm:text-sm font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="flex-1 h-11 flex items-center justify-center gap-2 rounded-full bg-red-600 text-xs sm:text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-60 shadow-xs"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Deleting…</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="size-4" />
+                    <span>Confirm Delete</span>
                   </>
                 )}
               </button>

@@ -243,7 +243,7 @@ export default function MyListingsPage() {
               </div>
 
               <Link
-                href="/studios"
+                href="/add-studio"
                 className="inline-flex items-center justify-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-strong transition-colors"
               >
                 <Plus className="size-4" />
@@ -311,7 +311,7 @@ export default function MyListingsPage() {
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <Link
-                  href="/studios"
+                  href="/add-studio"
                   className="inline-flex h-11 items-center gap-2 rounded-full bg-brand px-6 text-sm font-semibold text-white shadow-sm hover:bg-brand-strong transition-colors"
                 >
                   <Plus className="size-4" />

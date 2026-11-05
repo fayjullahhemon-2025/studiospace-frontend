@@ -26,7 +26,7 @@ const navLinks = [
 ];
 const accountLinks = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
-  { href: "/studios/new", label: "Add New Studio", Icon: Plus },
+  { href: "/add-studio", label: "Add New Studio", Icon: Plus },
   { href: "/my-listings", label: "My Studio Listings", Icon: ListTree },
   { href: "/my-bookings", label: "My Bookings", Icon: CalendarCheck },
 ];
@@ -138,8 +138,8 @@ function AccountMenu() {
         <ChevronDown className="size-3.5 text-muted-foreground" />{" "}
       </Menu.Trigger>{" "}
       <Menu.Portal>
-        <Menu.Positioner className="z-50" align="end" sideOffset={8}>
-          <Menu.Popup className="z-50 w-64 origin-[var(--transform-origin)] rounded-xl border border-border bg-popover p-1.5 shadow-lg outline-none">
+        <Menu.Positioner className="z-[9999]" align="end" sideOffset={8}>
+          <Menu.Popup className="z-[9999] max-h-[calc(100vh-5rem)] w-64 overflow-y-auto origin-[var(--transform-origin)] rounded-xl border border-border bg-popover p-1.5 shadow-lg outline-none">
             {" "}
             <Menu.Group>
               {" "}
