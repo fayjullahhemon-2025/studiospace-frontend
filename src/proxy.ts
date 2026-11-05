@@ -5,6 +5,10 @@ export async function proxy(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
 
   if (session?.user) {
+    const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl?.startsWith("/")) {
+      return NextResponse.redirect(new URL(callbackUrl, request.url));
+    }
     return NextResponse.redirect(new URL("/", request.url));
   }
 

@@ -41,7 +41,8 @@ export function HostGuarantee() {
   return (
     <section
       id="about"
-      className="border-t border-border/70 bg-background py-16 sm:py-24 text-foreground transition-colors">
+      className="border-t border-border/70 bg-background py-16 sm:py-24 text-foreground transition-colors"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16 xl:gap-20">
           {/* ── Left: Studio Image with Earnings Badge ── */}

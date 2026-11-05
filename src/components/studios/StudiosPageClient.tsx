@@ -13,7 +13,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
-import { type FilterState, StudioFilters } from "@/components/studios/StudioFilters";
+import {
+  type FilterState,
+  StudioFilters,
+} from "@/components/studios/StudioFilters";
 
 type Studio = {
   _id: string;
@@ -98,35 +101,48 @@ export function StudiosPageClient() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [headerSearch, setHeaderSearch] = useState("");
   const [headerCategory, setHeaderCategory] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
-  async function loadStudios() {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch("http://localhost:5000/studios");
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      const json: unknown = await res.json();
-      const list: Studio[] = Array.isArray(json)
-        ? json
-        : Array.isArray((json as { data?: Studio[] }).data)
-          ? ((json as { data: Studio[] }).data ?? [])
-          : [];
-      setAllStudios(list);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load studios.");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    let isMounted = true;
+    void reloadKey;
+    async function fetchStudios() {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch("http://localhost:5000/studios");
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const json: unknown = await res.json();
+        const list: Studio[] = Array.isArray(json)
+          ? json
+          : Array.isArray((json as { data?: Studio[] }).data)
+            ? ((json as { data: Studio[] }).data ?? [])
+            : [];
+        if (isMounted) {
+          setAllStudios(list);
+        }
+      } catch (e) {
+        if (isMounted) {
+          setError(e instanceof Error ? e.message : "Failed to load studios.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     }
-  }
 
-  useEffect(() => {
-    loadStudios();
-  }, []);
+    fetchStudios();
 
-  // Reset page when filters change
-  useEffect(() => {
+    return () => {
+      isMounted = false;
+    };
+  }, [reloadKey]);
+
+  function handleFilterChange(nextFilters: FilterState) {
+    setFilters(nextFilters);
     setPage(1);
-  }, [filters]);
+  }
 
   const filtered = applyFilters(allStudios, filters);
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
@@ -203,7 +219,6 @@ export function StudiosPageClient() {
       {/* ── Layout: Sidebar + Grid ── */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex gap-8 items-start">
-
           {/* ── Sidebar Filters (desktop) ── */}
           <div className="hidden lg:block w-60 xl:w-64 shrink-0">
             <div className="sticky top-24 rounded-2xl border border-border/80 bg-card p-5 shadow-2xs">
@@ -212,7 +227,7 @@ export function StudiosPageClient() {
                   filters={filters}
                   totalCount={allStudios.length}
                   filteredCount={filtered.length}
-                  onChange={setFilters}
+                  onChange={handleFilterChange}
                 />
               </Suspense>
             </div>
@@ -232,12 +247,16 @@ export function StudiosPageClient() {
               </button>
 
               <div className="hidden lg:flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{filtered.length}</span>
+                <span className="font-semibold text-foreground">
+                  {filtered.length}
+                </span>
                 <span>studios found</span>
               </div>
 
               <div className="flex items-center gap-2 ml-auto text-xs">
-                <span className="text-muted-foreground hidden sm:inline">Sort:</span>
+                <span className="text-muted-foreground hidden sm:inline">
+                  Sort:
+                </span>
                 <select
                   value={filters.sort}
                   onChange={(e) =>
@@ -279,7 +298,7 @@ export function StudiosPageClient() {
                 <p className="text-sm text-destructive font-medium">{error}</p>
                 <button
                   type="button"
-                  onClick={loadStudios}
+                  onClick={() => setReloadKey((k) => k + 1)}
                   className="mt-4 inline-flex items-center gap-2 rounded-full bg-destructive/10 px-4 py-2 text-xs font-semibold text-destructive hover:bg-destructive/20"
                 >
                   <RefreshCw className="size-3.5" />
@@ -430,20 +449,22 @@ export function StudiosPageClient() {
                     </button>
 
                     <div className="flex gap-1.5">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                        <button
-                          key={`page-${p}`}
-                          type="button"
-                          onClick={() => setPage(p)}
-                          className={`flex size-9 items-center justify-center rounded-lg border text-xs font-semibold transition-colors ${
-                            p === page
-                              ? "border-brand bg-brand text-white shadow-xs"
-                              : "border-border bg-card text-foreground hover:bg-muted"
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (p) => (
+                          <button
+                            key={`page-${p}`}
+                            type="button"
+                            onClick={() => setPage(p)}
+                            className={`flex size-9 items-center justify-center rounded-lg border text-xs font-semibold transition-colors ${
+                              p === page
+                                ? "border-brand bg-brand text-white shadow-xs"
+                                : "border-border bg-card text-foreground hover:bg-muted"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        ),
+                      )}
                     </div>
 
                     <button
@@ -513,7 +534,7 @@ export function StudiosPageClient() {
                 totalCount={allStudios.length}
                 filteredCount={filtered.length}
                 onChange={(next) => {
-                  setFilters(next);
+                  handleFilterChange(next);
                   setSidebarOpen(false);
                 }}
               />
@@ -524,4 +545,3 @@ export function StudiosPageClient() {
     </div>
   );
 }
-

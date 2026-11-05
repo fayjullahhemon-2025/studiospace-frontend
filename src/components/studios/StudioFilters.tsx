@@ -53,7 +53,7 @@ export function StudioFilters({
     if (cat && cat !== filters.category) {
       onChange({ ...filters, category: cat });
     }
-  }, []);
+  }, [searchParams, filters, onChange]);
 
   function update<K extends keyof FilterState>(key: K, value: FilterState[K]) {
     const next = { ...filters, [key]: value };
@@ -102,8 +102,7 @@ export function StudioFilters({
         <p className="text-xs text-muted-foreground">
           Showing{" "}
           <span className="font-semibold text-foreground">{filteredCount}</span>{" "}
-          of{" "}
-          <span className="font-semibold text-foreground">{totalCount}</span>{" "}
+          of <span className="font-semibold text-foreground">{totalCount}</span>{" "}
           studios
         </p>
         {hasActiveFilters && (
@@ -123,11 +122,15 @@ export function StudioFilters({
 
       {/* Search within results */}
       <form onSubmit={handleSearchSubmit} className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold tracking-wider text-foreground uppercase">
+        <label
+          htmlFor="filter-search-input"
+          className="text-xs font-bold tracking-wider text-foreground uppercase"
+        >
           Search Studios
         </label>
         <div className="flex gap-2">
           <input
+            id="filter-search-input"
             type="text"
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
@@ -153,7 +156,9 @@ export function StudioFilters({
         </span>
         <select
           value={filters.sort}
-          onChange={(e) => update("sort", e.target.value as FilterState["sort"])}
+          onChange={(e) =>
+            update("sort", e.target.value as FilterState["sort"])
+          }
           className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-brand/60 focus-visible:ring-2 focus-visible:ring-brand/15"
         >
           {SORT_OPTIONS.map((opt) => (
@@ -219,13 +224,20 @@ export function StudioFilters({
             Price / Hour
           </span>
           <span className="text-xs font-semibold text-muted-foreground">
-            ${filters.minPrice} – ${filters.maxPrice === 500 ? "500+" : filters.maxPrice}
+            ${filters.minPrice} – $
+            {filters.maxPrice === 500 ? "500+" : filters.maxPrice}
           </span>
         </div>
         <div className="flex gap-2">
           <div className="flex flex-col gap-1 flex-1">
-            <label className="text-[10px] text-muted-foreground">Min</label>
+            <label
+              htmlFor="filter-min-price"
+              className="text-[10px] text-muted-foreground"
+            >
+              Min
+            </label>
             <input
+              id="filter-min-price"
               type="number"
               min={0}
               max={filters.maxPrice - 10}
@@ -235,8 +247,14 @@ export function StudioFilters({
             />
           </div>
           <div className="flex flex-col gap-1 flex-1">
-            <label className="text-[10px] text-muted-foreground">Max</label>
+            <label
+              htmlFor="filter-max-price"
+              className="text-[10px] text-muted-foreground"
+            >
+              Max
+            </label>
             <input
+              id="filter-max-price"
               type="number"
               min={filters.minPrice + 10}
               max={500}
@@ -274,7 +292,9 @@ export function StudioFilters({
             <li key={r}>
               <button
                 type="button"
-                onClick={() => update("minRating", filters.minRating === r ? 0 : r)}
+                onClick={() =>
+                  update("minRating", filters.minRating === r ? 0 : r)
+                }
                 className={`flex w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${
                   filters.minRating === r
                     ? "bg-brand/10 font-semibold text-brand"
@@ -298,4 +318,3 @@ export function StudioFilters({
     </aside>
   );
 }
-

@@ -54,11 +54,14 @@ export function LoginForm() {
     setGooglePending(true);
     setStatus({ kind: "pending" });
 
+    const params = new URLSearchParams(window.location.search);
+    const redirectUrl = params.get("callbackUrl") || "/";
+
     let errorMessage: string | null = null;
     try {
       const { error } = await signIn.social({
         provider: "google",
-        callbackURL: "/",
+        callbackURL: redirectUrl,
       });
       if (error) {
         errorMessage = error.message || "Google sign-in failed";
@@ -97,8 +100,12 @@ export function LoginForm() {
 
     setStatus({ kind: "success", message: "Welcome back! You are signed in." });
     toast.success("Welcome back! You are signed in.");
+
+    const params = new URLSearchParams(window.location.search);
+    const redirectUrl = params.get("callbackUrl") || "/";
+
     window.setTimeout(() => {
-      window.location.assign("/");
+      window.location.assign(redirectUrl);
     }, 700);
 
     return resData;
