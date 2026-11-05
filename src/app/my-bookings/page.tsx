@@ -2,6 +2,7 @@
 
 import {
   AlertCircle,
+  AlertTriangle,
   Calendar,
   Clock,
   DollarSign,
@@ -10,10 +11,13 @@ import {
   MapPin,
   RefreshCw,
   Sparkles,
+  X,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import { useSession } from "@/lib/auth-client";
 
 interface Booking {
@@ -61,6 +65,10 @@ export default function MyBookingsPage() {
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Cancellation State
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
   useEffect(() => {
     if (isPending) return;
     if (!session?.user) {
@@ -94,6 +102,49 @@ export default function MyBookingsPage() {
         setLoading(false);
       });
   }, [session, isPending, router, refreshKey]);
+
+  const handleCancelConfirm = async () => {
+    if (!cancelTarget || !session?.user?.email) return;
+    setIsCancelling(true);
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/bookings/${cancelTarget._id}/cancel`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-email": session.user.email,
+          },
+          body: JSON.stringify({
+            userEmail: session.user.email,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast.error(data.message || "Failed to cancel reservation.");
+        setIsCancelling(false);
+        return;
+      }
+
+      setBookings((prev) =>
+        prev.map((b) =>
+          b._id === cancelTarget._id
+            ? { ...b, status: "Cancelled" as const }
+            : b,
+        ),
+      );
+      toast.success("Booking cancelled successfully!");
+      setCancelTarget(null);
+    } catch {
+      toast.error("Network error: Could not cancel reservation.");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   if (isPending || (!session?.user && !error)) {
     return (
@@ -260,16 +311,31 @@ export default function MyBookingsPage() {
                     </div>
                   </div>
 
-                  {/* Action Link */}
-                  <div className="shrink-0 flex items-center sm:self-center">
+                  {/* Action Links & Buttons */}
+                  <div className="shrink-0 flex items-center gap-2 sm:self-center">
                     <Link
                       href={`/studios/${booking.studioId}`}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-muted/40 px-4 text-xs font-semibold text-foreground hover:bg-muted hover:text-brand transition-colors"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3.5 text-xs font-semibold text-foreground hover:bg-muted hover:text-brand transition-colors"
                     >
                       <MapPin className="size-3.5" />
                       <span>View Studio</span>
                       <ExternalLink className="size-3 opacity-60" />
                     </Link>
+
+                    {booking.status === "Pending" ? (
+                      <button
+                        type="button"
+                        onClick={() => setCancelTarget(booking)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-red-200 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/20 px-3.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-2xs"
+                      >
+                        <XCircle className="size-3.5" />
+                        <span>Cancel</span>
+                      </button>
+                    ) : booking.status === "Cancelled" ? (
+                      <span className="inline-flex h-9 items-center px-2 text-xs font-medium text-muted-foreground/60">
+                        Cancelled
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -282,6 +348,142 @@ export default function MyBookingsPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel Reservation Confirmation Modal */}
+      {cancelTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div className="relative w-full max-w-md rounded-3xl border border-border bg-card p-6 sm:p-7 shadow-2xl text-foreground">
+            <button
+              type="button"
+              onClick={() => setCancelTarget(null)}
+              disabled={isCancelling}
+              aria-label="Close dialog"
+              className="absolute top-5 right-5 flex size-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:pointer-events-none"
+            >
+              <X className="size-4" />
+            </button>
+
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-600 dark:text-red-400 mb-4">
+              <AlertTriangle className="size-7" />
+            </div>
+
+            <div className="text-center">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
+                Cancel Reservation?
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Are you sure you want to cancel your reservation for{" "}
+                <span className="font-semibold text-foreground">
+                  &quot;{cancelTarget.studioTitle}&quot;
+                </span>{" "}
+                on {cancelTarget.bookingDate} (
+                {formatTimeString(cancelTarget.startTime)} –{" "}
+                {formatTimeString(cancelTarget.endTime)})?
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2.5">
+              <button
+                type="button"
+                onClick={() => setCancelTarget(null)}
+                disabled={isCancelling}
+                className="flex-1 h-11 rounded-full border border-border bg-muted/40 text-xs sm:text-sm font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelConfirm}
+                disabled={isCancelling}
+                className="flex-1 h-11 flex items-center justify-center gap-2 rounded-full bg-red-600 text-xs sm:text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-60 shadow-xs"
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Cancelling…</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="size-4" />
+                    <span>Confirm Cancel</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Reservation Confirmation Modal */}
+      {cancelTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div className="relative w-full max-w-md rounded-3xl border border-border bg-card p-6 sm:p-7 shadow-2xl text-foreground">
+            <button
+              type="button"
+              onClick={() => setCancelTarget(null)}
+              disabled={isCancelling}
+              aria-label="Close dialog"
+              className="absolute top-5 right-5 flex size-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:pointer-events-none"
+            >
+              <X className="size-4" />
+            </button>
+
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-600 dark:text-red-400 mb-4">
+              <AlertTriangle className="size-7" />
+            </div>
+
+            <div className="text-center">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
+                Cancel Reservation?
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Are you sure you want to cancel your reservation for{" "}
+                <span className="font-semibold text-foreground">
+                  &quot;{cancelTarget.studioTitle}&quot;
+                </span>{" "}
+                on {cancelTarget.bookingDate} ({formatTimeString(cancelTarget.startTime)} – {formatTimeString(cancelTarget.endTime)})?
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2.5">
+              <button
+                type="button"
+                onClick={() => setCancelTarget(null)}
+                disabled={isCancelling}
+                className="flex-1 h-11 rounded-full border border-border bg-muted/40 text-xs sm:text-sm font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelConfirm}
+                disabled={isCancelling}
+                className="flex-1 h-11 flex items-center justify-center gap-2 rounded-full bg-red-600 text-xs sm:text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-60 shadow-xs"
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Cancelling…</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="size-4" />
+                    <span>Confirm Cancel</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -94,4 +94,3 @@ export function DeleteConfirmModal({
   );
 }
 export default DeleteConfirmModal;
-
