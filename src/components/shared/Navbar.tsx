@@ -22,7 +22,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/studios", label: "Explore Studios" },
   { href: "/#howitworks", label: "How It Works" },
-  { href: "/about", label: "About Us" },
+  { href: "/#about", label: "About Us" },
 ];
 const accountLinks = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
