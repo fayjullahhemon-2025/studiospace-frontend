@@ -25,6 +25,7 @@ import { toast } from "react-toastify";
 import EmptyState from "@/components/shared/EmptyState";
 import DeleteConfirmModal from "@/components/studios/DeleteConfirmModal";
 import { useSession } from "@/lib/auth-client";
+import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
 interface Studio {
   _id: string;
@@ -79,9 +80,17 @@ export default function MyListingsPage() {
     setLoading(true);
     setError("");
 
-    fetch(
-      `http://localhost:5000/studios?ownerEmail=${encodeURIComponent(email)}`,
-    )
+    getTokenFromClient()
+      .then((token) =>
+        fetch(
+          `http://localhost:5000/studios?ownerEmail=${encodeURIComponent(email)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        ),
+      )
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Failed to load listings (${res.status})`);
@@ -108,10 +117,14 @@ export default function MyListingsPage() {
     setIsDeleting(true);
 
     try {
+      const token = await getTokenFromClient();
       const response = await fetch(
         `http://localhost:5000/studios/${deleteTarget._id}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
       );
 
@@ -150,12 +163,14 @@ export default function MyListingsPage() {
     setIsUpdating(true);
 
     try {
+      const token = await getTokenFromClient();
       const response = await fetch(
         `http://localhost:5000/studios/${editingStudio._id}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(updateFormData),
         },
@@ -222,11 +237,10 @@ export default function MyListingsPage() {
                   type="button"
                   onClick={() => setViewMode("card")}
                   aria-label="Card view"
-                  className={`flex size-8 items-center justify-center rounded-full transition-colors ${
-                    viewMode === "card"
-                      ? "bg-background text-brand shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`flex size-8 items-center justify-center rounded-full transition-colors ${viewMode === "card"
+                    ? "bg-background text-brand shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   <Grid className="size-4" />
                 </button>
@@ -234,11 +248,10 @@ export default function MyListingsPage() {
                   type="button"
                   onClick={() => setViewMode("table")}
                   aria-label="Table view"
-                  className={`flex size-8 items-center justify-center rounded-full transition-colors ${
-                    viewMode === "table"
-                      ? "bg-background text-brand shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`flex size-8 items-center justify-center rounded-full transition-colors ${viewMode === "table"
+                    ? "bg-background text-brand shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   <List className="size-4" />
                 </button>

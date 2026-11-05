@@ -16,6 +16,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import type { StudioDetail } from "@/components/studios/StudioDetailsClient";
 import { useSession } from "@/lib/auth-client";
+import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
 interface BookingModalProps {
   studio: StudioDetail;
@@ -57,10 +58,13 @@ export function BookingModal({ studio, isOpen, onClose }: BookingModalProps) {
     setIsSubmitting(true);
 
     try {
+      const token = await getTokenFromClient();
+      console.log("Token:", token);
       const response = await fetch("http://localhost:5000/bookings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
           "x-user-email": session?.user?.email || "",
           "x-user-name": session?.user?.name || "",
         },
@@ -81,7 +85,7 @@ export function BookingModal({ studio, isOpen, onClose }: BookingModalProps) {
       if (response.status === 409 || !response.ok) {
         toast.error(
           data.message ||
-            "This time slot is already booked. Please choose another time.",
+          "This time slot is already booked. Please choose another time.",
         );
         setIsSubmitting(false);
         return;

@@ -17,8 +17,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import ThemeToggle from "@/components/shared/ThemeToggle";
+// import ThemeToggle from "@/components/shared/ThemeToggle";
 import { signOut, useSession } from "@/lib/auth-client";
-import ThemeToggle from "@/components/shared/ThemeToggle";
 
 const navLinks = [
   { href: "/", label: "Home" },

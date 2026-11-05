@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import EmptyState from "@/components/shared/EmptyState";
 import { useSession } from "@/lib/auth-client";
+import { getTokenFromClient } from "@/lib/getTokenFromClient";
 
 interface Booking {
   _id: string;
@@ -89,7 +90,14 @@ export default function MyBookingsPage() {
     setLoading(true);
     setError("");
 
-    fetch(`http://localhost:5000/bookings/${encodeURIComponent(email)}`)
+    getTokenFromClient()
+      .then((token) =>
+        fetch(`http://localhost:5000/bookings/${encodeURIComponent(email)}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      )
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Failed to load bookings (${res.status})`);
@@ -116,6 +124,7 @@ export default function MyBookingsPage() {
     setIsCancelling(true);
 
     try {
+      const token = await getTokenFromClient();
       const response = await fetch(
         `http://localhost:5000/bookings/${cancelTarget._id}/cancel`,
         {
@@ -123,6 +132,7 @@ export default function MyBookingsPage() {
           headers: {
             "Content-Type": "application/json",
             "x-user-email": session.user.email,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             userEmail: session.user.email,
@@ -159,6 +169,7 @@ export default function MyBookingsPage() {
     setIsDeleting(true);
 
     try {
+      const token = await getTokenFromClient();
       const response = await fetch(
         `http://localhost:5000/bookings/${deleteTarget._id}`,
         {
@@ -166,6 +177,7 @@ export default function MyBookingsPage() {
           headers: {
             "Content-Type": "application/json",
             "x-user-email": session.user.email,
+            Authorization: `Bearer ${token}`,
           },
         },
       );

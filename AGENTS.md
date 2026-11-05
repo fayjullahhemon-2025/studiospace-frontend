@@ -46,6 +46,9 @@ Single Next.js app (not a monorepo). Package manager is **npm** (`package-lock.j
   - Client config: `src/lib/auth-client.ts`
   - Catch-all route: `src/app/api/auth/[...all]/route.ts`
   - Route guard: `src/proxy.ts` (redirects logged-in users away from `/login` and `/signup`).
+  - **JWT Token Retrieval**:
+    - Client components: `getTokenFromClient` (`src/lib/getTokenFromClient.ts`) calls `authClient.token()` to obtain the JWT token, passed as `Authorization: Bearer ${token}`.
+    - Server components/actions: `getTokenFromServer` (`src/lib/getTokenFromServer.ts`) calls `auth.api.getToken({ headers })` to retrieve the JWT token.
 
 ---
 
