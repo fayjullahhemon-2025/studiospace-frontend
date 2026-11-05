@@ -62,6 +62,11 @@ Single Next.js app (not a monorepo). Package manager is **npm** (`package-lock.j
 ## 4. UI, Styling & Component Architecture
 
 ### Theme & Styling
+- **Theme Management (Context API)**:
+  - Powered by `ThemeProvider` (`src/context/ThemeContext.tsx`) with `useTheme` hook.
+  - Automatically syncs with `localStorage` (`studiospace-theme`) and system preference (`prefers-color-scheme`).
+  - Toggles `.dark` class on root `<html>` element (`suppressHydrationWarning` enabled).
+  - Controlled via `ThemeToggle` (`src/components/shared/ThemeToggle.tsx`) accessible in desktop header and mobile drawer.
 - **Tailwind CSS v4 (CSS-first)**: No `tailwind.config` file. Theme tokens and dark mode variant (`@custom-variant dark`) reside in `src/app/globals.css`.
 - **Brand Colors**:
   - `--color-brand: #ff5c1a` (vibrant studio orange)

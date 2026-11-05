@@ -16,7 +16,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 import { signOut, useSession } from "@/lib/auth-client";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -226,11 +228,10 @@ export function Navbar() {
           })}{" "}
         </nav>{" "}
         <div className="flex items-center gap-2">
-          {" "}
+          <ThemeToggle />
           <div className="hidden lg:block">
-            {" "}
-            <AccountMenu />{" "}
-          </div>{" "}
+            <AccountMenu />
+          </div>
           <button
             type="button"
             onClick={() => setMobileOpen((open) => !open)}
@@ -239,23 +240,20 @@ export function Navbar() {
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             className="flex size-9 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted lg:hidden"
           >
-            {" "}
             {mobileOpen ? (
               <X className="size-4.5" />
             ) : (
               <MenuIcon className="size-4.5" />
-            )}{" "}
-          </button>{" "}
-        </div>{" "}
-      </div>{" "}
+            )}
+          </button>
+        </div>
+      </div>
       {mobileOpen ? (
         <div
           id="mobile-nav"
           className="border-t border-border bg-background px-4 pt-2 pb-4 lg:hidden"
         >
-          {" "}
           <nav aria-label="Primary mobile" className="flex flex-col">
-            {" "}
             {navLinks.map((link) => {
               const active = isActivePath(pathname, link.href);
               return (
@@ -265,16 +263,15 @@ export function Navbar() {
                   aria-current={active ? "page" : undefined}
                   className={`rounded-lg px-2 py-2.5 text-sm font-medium ${active ? "bg-brand/10 text-brand" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
                 >
-                  {" "}
-                  {link.label}{" "}
+                  {link.label}
                 </Link>
               );
-            })}{" "}
-          </nav>{" "}
-          <div className="mt-2 border-t border-border pt-3">
-            {" "}
-            <AccountMenu />{" "}
-          </div>{" "}
+            })}
+          </nav>
+          <div className="mt-3 border-t border-border pt-3 flex items-center justify-between gap-3">
+            <AccountMenu />
+            <ThemeToggle showLabel />
+          </div>
         </div>
       ) : null}{" "}
     </header>
