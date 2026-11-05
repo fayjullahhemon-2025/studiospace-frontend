@@ -31,15 +31,19 @@ export type StudioDetail = {
   title: string;
   category: string;
   hourlyRate: number;
+  securityDeposit?: number;
   rating: number;
   reviewCount: number;
   location: string;
   image: string;
+  images?: string[];
   description: string;
   squareFeet?: number;
   ceilingHeight?: string;
   capacity?: number;
-  images?: string[];
+  ownerEmail?: string;
+  ownerName?: string;
+  createdAt?: string | Date;
   host?: {
     name: string;
     avatar: string;
@@ -49,7 +53,7 @@ export type StudioDetail = {
     joined: string;
     bio: string;
   };
-  amenities?: { icon: string; name: string }[];
+  amenities?: (string | { icon: string; name: string })[];
   rules?: string[];
   reviews?: {
     id: string;
@@ -167,31 +171,66 @@ export function StudioDetailsClient({
     setIsBookingOpen(true);
   };
 
-  // Build full gallery array (primary image + supporting visuals)
+  // Build full 5-photo gallery array prioritizing user-uploaded studio.images
+  const rawImages =
+    studio.images && studio.images.length > 0
+      ? studio.images
+      : [studio.image];
+
   const categoryGallery =
     SUPPORTING_GALLERY_IMAGES[studio.category] ||
     SUPPORTING_GALLERY_IMAGES["Photo Studios"];
+
   const allImages = [
-    studio.image,
-    ...categoryGallery.filter((url) => url !== studio.image),
+    ...rawImages,
+    ...categoryGallery.filter((url) => !rawImages.includes(url)),
   ].slice(0, 5);
 
-  const host = studio.host ?? {
-    name: "Avery Sterling",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
-    responseRate: "100%",
-    responseTime: "Within 15 minutes",
-    verified: true,
-    joined: "Joined June 2023",
-    bio: "Commercial photographer & architectural designer with 10+ years curating daylight soundstages and creative lofts across the metropolitan area.",
+  // Dynamic host info from database
+  const hostName =
+    studio.ownerName?.trim() || studio.host?.name || "StudioSpace Verified Host";
+  const hostEmail = studio.ownerEmail || null;
+  const memberSince = studio.createdAt
+    ? `Listed ${new Date(studio.createdAt).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      })}`
+    : (studio.host?.joined ?? "Joined 2026");
+
+  const hostBio =
+    studio.host?.bio ||
+    (studio.ownerName
+      ? `Verified production host and space manager for ${studio.title}. Operating in ${studio.location} with immediate response availability for bookings and walkthroughs.`
+      : "Commercial photographer & stage curator with 10+ years managing daylight soundstages and creative production lofts.");
+
+  const hostAvatar =
+    studio.host?.avatar ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(hostName)}&background=ff5c1a&color=fff&size=200&bold=true`;
+
+  const host = {
+    name: hostName,
+    email: hostEmail,
+    avatar: hostAvatar,
+    responseRate: studio.host?.responseRate || "100%",
+    responseTime: studio.host?.responseTime || "Within 15 minutes",
+    verified: studio.host?.verified ?? true,
+    joined: memberSince,
+    bio: hostBio,
   };
 
-  const amenities = studio.amenities ?? DEFAULT_AMENITIES;
+  // Dynamic amenities list
+  const amenities =
+    studio.amenities && studio.amenities.length > 0
+      ? studio.amenities.map((item) =>
+          typeof item === "string" ? { name: item } : item,
+        )
+      : DEFAULT_AMENITIES;
+
   const reviews = studio.reviews ?? DEFAULT_REVIEWS;
-  const squareFeet = studio.squareFeet ?? 2800;
-  const ceilingHeight = studio.ceilingHeight ?? "16 ft";
   const capacity = studio.capacity ?? 35;
+  const securityDeposit = studio.securityDeposit ?? 150;
+  const squareFeet = studio.squareFeet ?? (capacity * 80 || 2800);
+  const ceilingHeight = studio.ceilingHeight ?? "16 ft";
 
   const estimatedTotal = studio.hourlyRate * selectedHours;
 
@@ -458,43 +497,39 @@ export function StudioDetailsClient({
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/80 bg-muted/20">
-                  <span className="text-muted-foreground">
-                    Cyclorama / Backdrop
-                  </span>
+                  <span className="text-muted-foreground">Category</span>
                   <span className="font-semibold text-foreground">
-                    24ft Double-Wall White Cyc
+                    {studio.category}
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/80 bg-muted/20">
-                  <span className="text-muted-foreground">Power Distro</span>
+                  <span className="text-muted-foreground">Location</span>
                   <span className="font-semibold text-foreground">
-                    100 Amp 3-Phase Camlock
+                    {studio.location}
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/80 bg-muted/20">
-                  <span className="text-muted-foreground">Sound Isolation</span>
+                  <span className="text-muted-foreground">Maximum Crew Capacity</span>
                   <span className="font-semibold text-foreground">
-                    Certified NC-25 Acoustic
+                    Up to {capacity} People
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/80 bg-muted/20">
-                  <span className="text-muted-foreground">
-                    Daylight Orientation
-                  </span>
+                  <span className="text-muted-foreground">Security Deposit</span>
                   <span className="font-semibold text-foreground">
-                    Direct North &amp; East Exposure
+                    ${securityDeposit} (Refundable)
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/80 bg-muted/20">
-                  <span className="text-muted-foreground">Flooring</span>
-                  <span className="font-semibold text-foreground">
-                    Polished Matte Dark Grey Concrete
+                  <span className="text-muted-foreground">Hourly Rate</span>
+                  <span className="font-semibold text-brand">
+                    ${studio.hourlyRate} / hour
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border/80 bg-muted/20">
-                  <span className="text-muted-foreground">HVAC</span>
+                  <span className="text-muted-foreground">Space Size</span>
                   <span className="font-semibold text-foreground">
-                    Ultra-Quiet Blower (Silent on Mic)
+                    {squareFeet.toLocaleString()} sq ft ({ceilingHeight} Ceilings)
                   </span>
                 </div>
               </div>
@@ -532,7 +567,7 @@ export function StudioDetailsClient({
                 Hosted by {host.name}
               </h2>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-6 rounded-2xl border border-border bg-card shadow-2xs">
-                <div className="relative size-16 sm:size-20 rounded-2xl overflow-hidden shrink-0 border border-brand/20">
+                <div className="relative size-16 sm:size-20 rounded-2xl overflow-hidden shrink-0 border border-brand/20 bg-muted">
                   <Image
                     src={host.avatar}
                     alt={host.name}
@@ -554,8 +589,18 @@ export function StudioDetailsClient({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {host.joined} • Response time: {host.responseTime}
+                  <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span>{host.joined}</span>
+                    <span>•</span>
+                    <span>Response time: {host.responseTime}</span>
+                    {host.email && (
+                      <>
+                        <span>•</span>
+                        <span className="font-mono text-brand font-medium">
+                          {host.email}
+                        </span>
+                      </>
+                    )}
                   </p>
                   <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed pt-1">
                     {host.bio}
@@ -680,6 +725,13 @@ export function StudioDetailsClient({
                 </div>
 
                 <div className="flex justify-between text-muted-foreground pt-1 border-t border-border/50">
+                  <span>Security Deposit:</span>
+                  <span className="font-semibold text-foreground">
+                    ${securityDeposit} (Refundable)
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-muted-foreground pt-1">
                   <span>Estimated Total:</span>
                   <span className="font-bold text-foreground text-sm">
                     ${estimatedTotal}

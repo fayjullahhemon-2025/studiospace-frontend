@@ -38,6 +38,7 @@ interface Studio {
   rating?: number;
   reviewCount?: number;
   image: string;
+  images?: string[];
   description?: string;
   ownerEmail?: string;
   specs?: string;
@@ -69,6 +70,7 @@ export default function MyListingsPage() {
     category: "",
     location: "",
     image: "",
+    images: [] as string[],
     description: "",
   });
 
@@ -152,57 +154,112 @@ export default function MyListingsPage() {
 
   const handleOpenEdit = (studio: Studio) => {
     setEditingStudio(studio);
+    const existingImages =
+      studio.images && studio.images.length > 0
+        ? studio.images
+        : studio.image
+          ? [studio.image]
+          : [];
     setUpdateFormData({
       title: studio.title,
       hourlyRate: studio.hourlyRate,
       category: studio.category,
       location: studio.location,
-      image: studio.image || "",
+      image: existingImages[0] || studio.image || "",
+      images: existingImages,
       description: studio.description || "",
     });
   };
 
-  const handleImageFile = async (file: File) => {
-    if (!file) return;
+  const handleImageFile = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file (PNG, JPG, WEBP, AVIF, GIF).");
+    const remaining = 5 - (updateFormData.images?.length || 0);
+    if (remaining <= 0) {
+      toast.warning("Maximum 5 photos allowed.");
       return;
     }
 
-    if (file.size > 32 * 1024 * 1024) {
-      toast.error("Image file size must be less than 32MB.");
-      return;
-    }
-
+    const toUpload = fileArray.slice(0, remaining);
     setIsUploadingImage(true);
+
     try {
       const token = await getTokenFromClient();
-      const fd = new FormData();
-      fd.append("image", file);
+      const uploaded: string[] = [];
 
-      const res = await fetch("http://localhost:5000/upload", {
-        method: "POST",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: fd,
-      });
+      for (const file of toUpload) {
+        if (!file.type.startsWith("image/")) {
+          toast.error(`${file.name} is not an image file.`);
+          continue;
+        }
+        if (file.size > 32 * 1024 * 1024) {
+          toast.error(`${file.name} is larger than 32MB.`);
+          continue;
+        }
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        toast.error(data.message || "Failed to upload image to ImgBB.");
-        return;
+        const fd = new FormData();
+        fd.append("image", file);
+
+        const res = await fetch("http://localhost:5000/upload", {
+          method: "POST",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: fd,
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.data?.url) {
+          uploaded.push(data.data.url);
+        } else {
+          toast.error(data.message || `Failed to upload ${file.name}`);
+        }
       }
 
-      const uploadedUrl = data.data?.url || data.imageUrl;
-      setUpdateFormData((prev) => ({ ...prev, image: uploadedUrl }));
-      toast.success("Image uploaded to ImgBB successfully!");
+      if (uploaded.length > 0) {
+        setUpdateFormData((prev) => {
+          const combined = [...(prev.images || []), ...uploaded].slice(0, 5);
+          return {
+            ...prev,
+            images: combined,
+            image: combined[0] || prev.image,
+          };
+        });
+        toast.success(
+          `Uploaded ${uploaded.length} photo${uploaded.length > 1 ? "s" : ""} to ImgBB!`,
+        );
+      }
     } catch {
       toast.error("Network error: Could not reach image upload service.");
     } finally {
       setIsUploadingImage(false);
     }
+  };
+
+  const handleRemoveEditImage = (index: number) => {
+    setUpdateFormData((prev) => {
+      const filtered = prev.images.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        images: filtered,
+        image: filtered[0] || "",
+      };
+    });
+  };
+
+  const handleSetCoverEditImage = (index: number) => {
+    setUpdateFormData((prev) => {
+      const target = prev.images[index];
+      const rest = prev.images.filter((_, i) => i !== index);
+      const combined = [target, ...rest];
+      return {
+        ...prev,
+        images: combined,
+        image: target,
+      };
+    });
+    toast.info("Cover photo updated!");
   };
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
@@ -752,75 +809,104 @@ export default function MyListingsPage() {
                 </div>
               </div>
 
-              {/* Cover Image Upload / URL */}
+              {/* Studio Photos (Up to 5) */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label
-                    htmlFor="edit-image"
-                    className="block text-xs font-semibold text-foreground"
-                  >
-                    Cover Image
-                  </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="block text-xs font-semibold text-foreground">
+                    Studio Photos ({updateFormData.images.length} / 5)
+                  </span>
                   <label
                     htmlFor="edit-image-file"
                     className={`inline-flex items-center gap-1 text-[11px] font-semibold text-brand hover:underline cursor-pointer ${
-                      isUploadingImage ? "opacity-50 pointer-events-none" : ""
+                      isUploadingImage || updateFormData.images.length >= 5
+                        ? "opacity-50 pointer-events-none"
+                        : ""
                     }`}
                   >
                     <UploadCloud className="size-3.5" />
                     <span>
                       {isUploadingImage
                         ? "Uploading to ImgBB..."
-                        : "Upload New (ImgBB)"}
+                        : "Upload Photo (ImgBB)"}
                     </span>
                     <input
                       id="edit-image-file"
                       type="file"
+                      multiple
                       accept="image/*"
-                      disabled={isUploadingImage}
+                      disabled={isUploadingImage || updateFormData.images.length >= 5}
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleImageFile(file);
+                        if (e.target.files) handleImageFile(e.target.files);
+                        e.target.value = "";
                       }}
                       className="sr-only"
                     />
                   </label>
                 </div>
-                <div className="relative">
-                  <ImageIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input
-                    id="edit-image"
-                    type="url"
-                    placeholder="https://i.ibb.co/... or https://images.unsplash.com/..."
-                    value={updateFormData.image}
-                    onChange={(e) =>
-                      setUpdateFormData((prev) => ({
-                        ...prev,
-                        image: e.target.value,
-                      }))
+
+                {/* 5-Slot Thumbnail Grid */}
+                <div className="grid grid-cols-5 gap-2 mt-2">
+                  {[0, 1, 2, 3, 4].map((slotIdx) => {
+                    const imgUrl = updateFormData.images[slotIdx];
+                    const isCover = slotIdx === 0;
+
+                    if (imgUrl) {
+                      return (
+                        <div
+                          key={imgUrl}
+                          className={`group relative aspect-[4/3] rounded-lg overflow-hidden border bg-neutral-900 ${
+                            isCover ? "border-brand ring-1 ring-brand" : "border-border"
+                          }`}
+                        >
+                          {/* biome-ignore lint/performance/noImgElement: slot preview */}
+                          <img
+                            src={imgUrl}
+                            alt={`Photo ${slotIdx + 1}`}
+                            className="size-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80";
+                            }}
+                          />
+                          <div className="absolute top-1 left-1">
+                            {isCover ? (
+                              <span className="rounded bg-brand px-1 py-0.2 text-[8px] font-bold text-white">
+                                Cover
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleSetCoverEditImage(slotIdx)}
+                                className="opacity-0 group-hover:opacity-100 rounded bg-black/70 px-1 text-[8px] text-white hover:bg-brand"
+                              >
+                                ★
+                              </button>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEditImage(slotIdx)}
+                            className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-black/70 text-white/90 hover:bg-red-600"
+                            aria-label="Remove"
+                          >
+                            <X className="size-2.5" />
+                          </button>
+                        </div>
+                      );
                     }
-                    className="h-10 w-full rounded-xl border border-input bg-background pl-9 pr-3 text-xs outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20 font-mono"
-                  />
+
+                    return (
+                      <label
+                        key={`empty-edit-${slotIdx}`}
+                        htmlFor="edit-image-file"
+                        className="flex flex-col items-center justify-center aspect-[4/3] rounded-lg border-2 border-dashed border-border bg-muted/20 hover:border-brand/40 transition-colors cursor-pointer text-muted-foreground p-1 text-center"
+                      >
+                        <Plus className="size-3 mb-0.5 text-muted-foreground" />
+                        <span className="text-[9px]">#{slotIdx + 1}</span>
+                      </label>
+                    );
+                  })}
                 </div>
-                {updateFormData.image && (
-                  <div className="mt-2 relative h-24 w-full overflow-hidden rounded-lg border border-border bg-muted/20">
-                    {/* biome-ignore lint/performance/noImgElement: preview only */}
-                    <img
-                      src={updateFormData.image}
-                      alt="Studio preview"
-                      className="size-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display =
-                          "none";
-                      }}
-                    />
-                    <div className="absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white">
-                      {updateFormData.image.includes("ibb.co")
-                        ? "ImgBB Hosted"
-                        : "Preview"}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div>

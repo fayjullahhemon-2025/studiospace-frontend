@@ -10,7 +10,10 @@ import {
   Image as ImageIcon,
   Loader2,
   MapPin,
+  Plus,
   Sparkles,
+  Star,
+  Trash2,
   UploadCloud,
   Users,
   Wifi,
@@ -73,6 +76,7 @@ interface FormState {
   capacity: string;
   location: string;
   image: string;
+  images: string[];
   description: string;
   amenities: Amenity[];
 }
@@ -85,6 +89,7 @@ const INITIAL_FORM: FormState = {
   capacity: "",
   location: "",
   image: "",
+  images: [],
   description: "",
   amenities: [],
 };
@@ -138,47 +143,121 @@ export default function AddStudioPage() {
     }));
   }
 
-  async function handleImageFile(file: File) {
-    if (!file) return;
+  const [urlInput, setUrlInput] = useState("");
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file (PNG, JPG, WEBP, AVIF, GIF).");
+  async function handleImageFiles(files: FileList | File[]) {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    const remainingSlots = 5 - form.images.length;
+    if (remainingSlots <= 0) {
+      toast.warning("You can only add up to 5 photos total.");
       return;
     }
 
-    if (file.size > 32 * 1024 * 1024) {
-      toast.error("Image file size must be less than 32MB.");
-      return;
-    }
-
+    const toUpload = fileArray.slice(0, remainingSlots);
     setIsUploadingImage(true);
+
     try {
       const token = await getTokenFromClient();
-      const fd = new FormData();
-      fd.append("image", file);
+      const uploadedUrls: string[] = [];
 
-      const res = await fetch("http://localhost:5000/upload", {
-        method: "POST",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: fd,
-      });
+      for (const file of toUpload) {
+        if (!file.type.startsWith("image/")) {
+          toast.error(`${file.name} is not an image file.`);
+          continue;
+        }
+        if (file.size > 32 * 1024 * 1024) {
+          toast.error(`${file.name} is larger than 32MB.`);
+          continue;
+        }
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        toast.error(data.message || "Failed to upload image to ImgBB.");
-        return;
+        const fd = new FormData();
+        fd.append("image", file);
+
+        const res = await fetch("http://localhost:5000/upload", {
+          method: "POST",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: fd,
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.data?.url) {
+          uploadedUrls.push(data.data.url);
+        } else {
+          toast.error(data.message || `Failed to upload ${file.name}`);
+        }
       }
 
-      const uploadedUrl = data.data?.url || data.imageUrl;
-      setField("image", uploadedUrl);
-      toast.success("Image uploaded to ImgBB successfully!");
+      if (uploadedUrls.length > 0) {
+        setForm((prev) => {
+          const updated = [...prev.images, ...uploadedUrls].slice(0, 5);
+          return {
+            ...prev,
+            images: updated,
+            image: updated[0] || "",
+          };
+        });
+        toast.success(
+          `Uploaded ${uploadedUrls.length} photo${uploadedUrls.length > 1 ? "s" : ""} to ImgBB!`,
+        );
+      }
     } catch {
       toast.error("Network error: Could not reach image upload service.");
     } finally {
       setIsUploadingImage(false);
     }
+  }
+
+  function handleAddImageUrl(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    const trimmed = urlInput.trim();
+    if (!trimmed) {
+      toast.error("Please enter a valid image URL.");
+      return;
+    }
+    if (form.images.length >= 5) {
+      toast.warning("You can only add up to 5 photos total.");
+      return;
+    }
+    setForm((prev) => {
+      const updated = [...prev.images, trimmed].slice(0, 5);
+      return {
+        ...prev,
+        images: updated,
+        image: updated[0] || "",
+      };
+    });
+    setUrlInput("");
+    toast.success("Image URL added to gallery!");
+  }
+
+  function handleRemoveImage(index: number) {
+    setForm((prev) => {
+      const updated = prev.images.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        images: updated,
+        image: updated[0] || "",
+      };
+    });
+  }
+
+  function handleSetAsCover(index: number) {
+    if (index === 0) return;
+    setForm((prev) => {
+      const target = prev.images[index];
+      const rest = prev.images.filter((_, i) => i !== index);
+      const updated = [target, ...rest];
+      return {
+        ...prev,
+        images: updated,
+        image: target,
+      };
+    });
+    toast.info("Cover photo set!");
   }
 
   // ── Submit ──
@@ -193,8 +272,16 @@ export default function AddStudioPage() {
       toast.error("Please select a category.");
       return;
     }
-    if (!form.image.trim()) {
-      toast.error("Please upload a cover image or enter an image URL.");
+
+    const finalImages =
+      form.images.length > 0
+        ? form.images
+        : form.image.trim()
+          ? [form.image.trim()]
+          : [];
+
+    if (finalImages.length === 0) {
+      toast.error("Please upload or add at least 1 photo for your studio.");
       return;
     }
 
@@ -207,7 +294,8 @@ export default function AddStudioPage() {
       securityDeposit: Number(form.securityDeposit),
       capacity: Number(form.capacity),
       location: form.location.trim(),
-      image: form.image.trim(),
+      image: finalImages[0],
+      images: finalImages,
       description: form.description.trim(),
       amenities: form.amenities,
       ownerEmail: session.user.email,
@@ -442,60 +530,75 @@ export default function AddStudioPage() {
             </div>
           </div>
 
-          {/* ══ SECTION 3 — Media ════════════════════════════════════════════ */}
+          {/* ══ SECTION 3 — Media / Photos (Up to 5 Photos) ══════════════════ */}
           <div className="rounded-2xl border border-border bg-card p-6 shadow-2xs">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-foreground">
-                <ImageIcon className="size-4.5 text-brand" />
-                <h2 className="text-base font-bold tracking-tight">
-                  Cover Image
-                  <span className="ml-1 text-red-500">*</span>
-                </h2>
+              <div>
+                <div className="flex items-center gap-2 text-foreground">
+                  <ImageIcon className="size-4.5 text-brand" />
+                  <h2 className="text-base font-bold tracking-tight">
+                    Studio Photos &amp; Gallery
+                    <span className="ml-1 text-red-500">*</span>
+                  </h2>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Add up to 5 photos to showcase your workspace on the studio detail page.
+                </p>
               </div>
-              <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setImageTab("upload")}
-                  className={`rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-                    imageTab === "upload"
-                      ? "bg-background text-brand shadow-2xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Upload File (ImgBB)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setImageTab("url")}
-                  className={`rounded-lg px-2.5 py-1 font-semibold transition-colors ${
-                    imageTab === "url"
-                      ? "bg-background text-brand shadow-2xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Direct URL
-                </button>
+
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-brand/10 px-2.5 py-1 text-xs font-bold text-brand">
+                  {form.images.length} / 5 Photos Added
+                </span>
+
+                <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setImageTab("upload")}
+                    className={`rounded-lg px-2.5 py-1 font-semibold transition-colors ${
+                      imageTab === "upload"
+                        ? "bg-background text-brand shadow-2xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Upload Files (ImgBB)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageTab("url")}
+                    className={`rounded-lg px-2.5 py-1 font-semibold transition-colors ${
+                      imageTab === "url"
+                        ? "bg-background text-brand shadow-2xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Add by URL
+                  </button>
+                </div>
               </div>
             </div>
 
             {imageTab === "upload" ? (
               <div className="space-y-3">
                 <label
-                  htmlFor="studio-image-file"
+                  htmlFor="studio-image-files"
                   className={`group relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-pointer ${
-                    isUploadingImage
-                      ? "border-brand/60 bg-brand/5 pointer-events-none"
+                    isUploadingImage || form.images.length >= 5
+                      ? "border-border bg-muted/20 opacity-60 pointer-events-none"
                       : "border-border hover:border-brand/50 hover:bg-muted/30"
                   }`}
                 >
                   <input
-                    id="studio-image-file"
+                    id="studio-image-files"
                     type="file"
+                    multiple
                     accept="image/*"
-                    disabled={isUploadingImage}
+                    disabled={isUploadingImage || form.images.length >= 5}
                     onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageFile(file);
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleImageFiles(e.target.files);
+                      }
+                      e.target.value = "";
                     }}
                     className="sr-only"
                   />
@@ -506,7 +609,7 @@ export default function AddStudioPage() {
                         Uploading to ImgBB...
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Processing high-res image and generating public CDN link
+                        Processing high-res images and generating public CDN links
                       </p>
                     </div>
                   ) : (
@@ -515,88 +618,129 @@ export default function AddStudioPage() {
                         <UploadCloud className="size-6" />
                       </div>
                       <p className="text-sm font-semibold text-foreground">
-                        Click to upload or drag and drop
+                        {form.images.length >= 5
+                          ? "Maximum 5 photos reached"
+                          : "Click to upload multiple or drag and drop"}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        PNG, JPG, WEBP, AVIF or GIF (up to 32MB)
+                        PNG, JPG, WEBP, AVIF or GIF (up to 32MB per photo)
                       </p>
                       <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-                        <Sparkles className="size-3 text-brand" /> Hosted
-                        securely via ImgBB API
+                        <Sparkles className="size-3 text-brand" /> Hosted securely via ImgBB API
                       </span>
                     </div>
                   )}
                 </label>
               </div>
             ) : (
-              <div>
-                <label htmlFor="image" className={labelCls()}>
-                  Image URL
-                </label>
+              <form onSubmit={handleAddImageUrl} className="flex gap-2">
                 <input
-                  id="image"
+                  id="image-url-input"
                   type="url"
-                  placeholder="https://images.unsplash.com/photo-… or https://i.ibb.co/…"
-                  value={form.image}
-                  onChange={(e) => setField("image", e.target.value)}
+                  placeholder="Paste image URL (https://i.ibb.co/… or Unsplash)"
+                  value={urlInput}
+                  disabled={form.images.length >= 5}
+                  onChange={(e) => setUrlInput(e.target.value)}
                   className={inputCls()}
                 />
-                <p className="mt-1.5 text-[11px] text-muted-foreground">
-                  Paste a direct image URL (ImgBB, Unsplash, etc.). Use
-                  landscape ratio for best results.
-                </p>
-              </div>
+                <button
+                  type="button"
+                  onClick={() => handleAddImageUrl()}
+                  disabled={!urlInput.trim() || form.images.length >= 5}
+                  className="h-11 px-5 rounded-xl bg-brand text-xs font-bold text-white hover:bg-brand-strong transition-colors shrink-0 disabled:opacity-50"
+                >
+                  <Plus className="size-4 inline mr-1" />
+                  Add Photo
+                </button>
+              </form>
             )}
 
-            {/* Live Preview */}
-            {form.image && (
-              <div className="mt-4 overflow-hidden rounded-xl border border-border bg-muted/20">
-                <div className="relative aspect-video w-full">
-                  {/* biome-ignore lint/performance/noImgElement: preview only */}
-                  <img
-                    src={form.image}
-                    alt="Cover preview"
-                    className="size-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display =
-                        "none";
-                    }}
-                  />
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-md px-3 py-1 text-[11px] font-medium text-white shadow-sm">
-                    <CheckCircle2 className="size-3.5 text-emerald-400" />
-                    <span>
-                      {form.image.includes("ibb.co")
-                        ? "Hosted on ImgBB"
-                        : "Image Connected"}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setField("image", "")}
-                    className="absolute top-3 right-3 flex size-7 items-center justify-center rounded-full bg-black/70 text-white/80 hover:text-white hover:bg-black/90 transition-colors"
-                    title="Remove image"
-                    aria-label="Remove image"
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between px-3 py-2 text-xs border-t border-border">
-                  <span className="truncate max-w-sm text-muted-foreground font-mono text-[11px]">
-                    {form.image}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(form.image);
-                      toast.info("Image URL copied to clipboard!");
-                    }}
-                    className="text-[11px] font-semibold text-brand hover:underline shrink-0 ml-2"
-                  >
-                    Copy Link
-                  </button>
-                </div>
+            {/* 5-Slot Photo Gallery Preview */}
+            <div className="mt-5">
+              <p className="text-xs font-semibold text-foreground mb-2.5 flex items-center justify-between">
+                <span>Studio Gallery Slots (First photo is the Cover Photo)</span>
+                <span className="text-muted-foreground font-normal text-[11px]">
+                  Click ★ Cover to set as primary
+                </span>
+              </p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {[0, 1, 2, 3, 4].map((slotIdx) => {
+                  const imgUrl = form.images[slotIdx];
+                  const isCover = slotIdx === 0;
+
+                  if (imgUrl) {
+                    return (
+                      <div
+                        key={imgUrl}
+                        className={`group relative aspect-[4/3] rounded-xl overflow-hidden border bg-neutral-900 shadow-2xs ${
+                          isCover ? "border-brand ring-2 ring-brand/30" : "border-border"
+                        }`}
+                      >
+                        {/* biome-ignore lint/performance/noImgElement: photo slot preview */}
+                        <img
+                          src={imgUrl}
+                          alt={`Studio slot ${slotIdx + 1}`}
+                          className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80";
+                          }}
+                        />
+
+                        {/* Badges */}
+                        <div className="absolute top-1.5 left-1.5 flex flex-col gap-1">
+                          {isCover ? (
+                            <span className="flex items-center gap-1 rounded-md bg-brand px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
+                              <Star className="size-2.5 fill-white" /> Cover
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleSetAsCover(slotIdx)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-black/70 hover:bg-brand text-white px-1.5 py-0.5 text-[9px] font-semibold"
+                              title="Set as Cover Photo"
+                            >
+                              ★ Set Cover
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Remove Action */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(slotIdx)}
+                          className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-black/70 text-white/90 hover:bg-red-600 hover:text-white transition-colors"
+                          title="Remove photo"
+                          aria-label="Remove photo"
+                        >
+                          <Trash2 className="size-3" />
+                        </button>
+
+                        {/* Slot number footer */}
+                        <div className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-mono text-white/90">
+                          #{slotIdx + 1}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <label
+                      key={`empty-${slotIdx}`}
+                      htmlFor="studio-image-files"
+                      className="flex flex-col items-center justify-center aspect-[4/3] rounded-xl border-2 border-dashed border-border bg-muted/20 hover:border-brand/40 hover:bg-muted/40 transition-colors cursor-pointer text-muted-foreground p-3 text-center"
+                    >
+                      <Plus className="size-4 mb-1 text-muted-foreground" />
+                      <span className="text-[10px] font-medium">Slot #{slotIdx + 1}</span>
+                      <span className="text-[9px] opacity-70">
+                        {slotIdx === 0 ? "Cover Photo" : "Gallery Photo"}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
-            )}
+            </div>
           </div>
 
           {/* ══ SECTION 4 — Amenities ════════════════════════════════════════ */}
