@@ -86,7 +86,7 @@ export default function MyListingsPage() {
           `http://localhost:5000/studios?ownerEmail=${encodeURIComponent(email)}`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
           },
         ),
@@ -123,7 +123,7 @@ export default function MyListingsPage() {
         {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         },
       );
@@ -170,7 +170,7 @@ export default function MyListingsPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(updateFormData),
         },
@@ -237,10 +237,11 @@ export default function MyListingsPage() {
                   type="button"
                   onClick={() => setViewMode("card")}
                   aria-label="Card view"
-                  className={`flex size-8 items-center justify-center rounded-full transition-colors ${viewMode === "card"
-                    ? "bg-background text-brand shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                    }`}
+                  className={`flex size-8 items-center justify-center rounded-full transition-colors ${
+                    viewMode === "card"
+                      ? "bg-background text-brand shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   <Grid className="size-4" />
                 </button>
@@ -248,10 +249,11 @@ export default function MyListingsPage() {
                   type="button"
                   onClick={() => setViewMode("table")}
                   aria-label="Table view"
-                  className={`flex size-8 items-center justify-center rounded-full transition-colors ${viewMode === "table"
-                    ? "bg-background text-brand shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                    }`}
+                  className={`flex size-8 items-center justify-center rounded-full transition-colors ${
+                    viewMode === "table"
+                      ? "bg-background text-brand shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   <List className="size-4" />
                 </button>

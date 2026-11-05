@@ -94,7 +94,7 @@ export default function MyBookingsPage() {
       .then((token) =>
         fetch(`http://localhost:5000/bookings/${encodeURIComponent(email)}`, {
           headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         }),
       )
@@ -132,7 +132,7 @@ export default function MyBookingsPage() {
           headers: {
             "Content-Type": "application/json",
             "x-user-email": session.user.email,
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             userEmail: session.user.email,
@@ -177,7 +177,7 @@ export default function MyBookingsPage() {
           headers: {
             "Content-Type": "application/json",
             "x-user-email": session.user.email,
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         },
       );

@@ -57,16 +57,27 @@ export function BookingModal({ studio, isOpen, onClose }: BookingModalProps) {
     e.preventDefault();
     setIsSubmitting(true);
 
+    if (!session?.user) {
+      toast.error("Please log in to book this studio.");
+      router.push(`/login?callbackUrl=/studios/${studio._id}`);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const token = await getTokenFromClient();
-      console.log("Token:", token);
+      if (!token) {
+        toast.error("Authentication session expired. Please log in again.");
+        router.push(`/login?callbackUrl=/studios/${studio._id}`);
+        setIsSubmitting(false);
+        return;
+      }
+
       const response = await fetch("http://localhost:5000/bookings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          "x-user-email": session?.user?.email || "",
-          "x-user-name": session?.user?.name || "",
         },
         body: JSON.stringify({
           studioId: studio._id,
@@ -75,17 +86,25 @@ export function BookingModal({ studio, isOpen, onClose }: BookingModalProps) {
           startTime: startTime,
           endTime: computedEndTime,
           totalAmount: totalPrice,
-          userEmail: session?.user?.email,
-          userName: session?.user?.name,
+          userEmail: session.user.email,
+          userName: session.user.name,
         }),
       });
 
       const data = await response.json();
 
-      if (response.status === 409 || !response.ok) {
+      if (response.status === 409) {
         toast.error(
           data.message ||
-          "This time slot is already booked. Please choose another time.",
+            "This time slot is already booked. Please choose another time.",
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!response.ok) {
+        toast.error(
+          data.message || "Failed to place booking. Please try again.",
         );
         setIsSubmitting(false);
         return;

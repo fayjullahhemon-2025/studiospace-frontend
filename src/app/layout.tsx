@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Suspense } from "react";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import { ToastContainer } from "react-toastify";
@@ -39,7 +40,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <Navbar />
+          <Suspense>
+            <Navbar />
+          </Suspense>
           <div className="flex-1 flex flex-col">{children}</div>
           <Footer />
           <ToastContainer

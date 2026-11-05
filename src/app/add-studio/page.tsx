@@ -167,6 +167,11 @@ export default function AddStudioPage() {
 
     try {
       const token = await getTokenFromClient();
+      if (!token) {
+        toast.error("Authentication expired. Please log in again.");
+        setIsSubmitting(false);
+        return;
+      }
       const res = await fetch("http://localhost:5000/studios", {
         method: "POST",
         headers: {
@@ -450,10 +455,11 @@ export default function AddStudioPage() {
                     key={amenity}
                     type="button"
                     onClick={() => toggleAmenity(amenity)}
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-medium transition-all ${checked
-                      ? "border-brand/50 bg-brand/8 text-brand shadow-2xs"
-                      : "border-border bg-background text-muted-foreground hover:border-brand/30 hover:bg-muted/40 hover:text-foreground"
-                      }`}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-medium transition-all ${
+                      checked
+                        ? "border-brand/50 bg-brand/8 text-brand shadow-2xs"
+                        : "border-border bg-background text-muted-foreground hover:border-brand/30 hover:bg-muted/40 hover:text-foreground"
+                    }`}
                   >
                     <CheckSquare
                       className={`size-3.5 shrink-0 ${checked ? "text-brand" : "text-muted-foreground/40"}`}
