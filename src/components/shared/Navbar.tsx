@@ -71,7 +71,16 @@ function AccountMenu() {
   const session = useSession();
   const user = session.data?.user;
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setOpen(false);
+  }
+
   async function handleLogout() {
+    setOpen(false);
     await signOut();
     toast.info("You have been logged out.");
     window.setTimeout(() => {
@@ -104,7 +113,7 @@ function AccountMenu() {
   }
   const displayName = user.name || "StudioSpace User";
   return (
-    <Menu.Root>
+    <Menu.Root modal={false} open={open} onOpenChange={setOpen}>
       {" "}
       <Menu.Trigger
         aria-label="Open account menu"
@@ -159,7 +168,8 @@ function AccountMenu() {
                 {accountLinks.map(({ href, label, Icon }) => (
                   <Menu.LinkItem
                     key={href}
-                    render={<Link href={href} />}
+                    closeOnClick
+                    render={<Link href={href} onClick={() => setOpen(false)} />}
                     className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors data-[highlighted]:bg-muted ${isActivePath(pathname, href) ? "font-semibold text-brand" : "text-foreground"}`}
                   >
                     {" "}
