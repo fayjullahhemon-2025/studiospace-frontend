@@ -43,7 +43,34 @@ type Status = {
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
-  const pending = status.kind === "pending";
+  const [googlePending, setGooglePending] = useState(false);
+  const pending = status.kind === "pending" || googlePending;
+
+  async function handleGoogleSignIn() {
+    if (googlePending) {
+      return;
+    }
+    setGooglePending(true);
+    setStatus({ kind: "pending" });
+
+    let errorMessage: string | null = null;
+    try {
+      const { error } = await signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+      if (error) {
+        errorMessage = error.message || "Google sign-in failed";
+      }
+    } catch {
+      errorMessage = "Google sign-in failed";
+    }
+
+    if (errorMessage) {
+      setStatus({ kind: "error", message: errorMessage });
+    }
+    setGooglePending(false);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,9 +120,12 @@ export function LoginForm() {
       <div className="mt-8 flex flex-col gap-3">
         <button
           type="button"
-          className="flex h-11 items-center justify-center gap-2 rounded-lg border border-border text-sm font-medium transition-colors hover:bg-muted"
+          onClick={handleGoogleSignIn}
+          disabled={pending}
+          className="flex h-11 items-center justify-center gap-2 rounded-lg border border-border text-sm font-medium transition-colors hover:bg-muted disabled:opacity-60"
         >
-          <GoogleIcon /> Continue with Google
+          <GoogleIcon />
+          {googlePending ? "Redirecting to Google…" : "Continue with Google"}
         </button>
       </div>
 
