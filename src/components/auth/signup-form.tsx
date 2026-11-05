@@ -12,6 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { toast } from "react-toastify";
 import { signIn, signOut, signUp } from "@/lib/auth-client";
 
 const DEFAULT_AVATAR_PREVIEW =
@@ -93,6 +94,7 @@ export function SignupForm() {
 
     if (errorMessage) {
       setStatus({ kind: "error", message: errorMessage });
+      toast.error(errorMessage);
     }
     setGooglePending(false);
   }
@@ -113,7 +115,9 @@ export function SignupForm() {
     console.log(resData, error);
 
     if (error) {
-      setStatus({ kind: "error", message: error.message || "Signup failed" });
+      const signupError = error.message || "Signup failed";
+      setStatus({ kind: "error", message: signupError });
+      toast.error(signupError);
       return;
     }
 
@@ -122,6 +126,7 @@ export function SignupForm() {
       kind: "success",
       message: "Account created! Redirecting you to sign in…",
     });
+    toast.success("Account created! Redirecting you to sign in…");
     window.setTimeout(() => {
       window.location.assign("/login");
     }, 700);

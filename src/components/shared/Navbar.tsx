@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { toast } from "react-toastify";
 import { signOut, useSession } from "@/lib/auth-client";
 
 const navLinks = [
@@ -69,7 +70,10 @@ function AccountMenu() {
   const pathname = usePathname();
   async function handleLogout() {
     await signOut();
-    window.location.assign("/");
+    toast.info("You have been logged out.");
+    window.setTimeout(() => {
+      window.location.assign("/");
+    }, 700);
   }
   if (session.isPending) {
     return <span className="size-8 animate-pulse rounded-full bg-muted" />;

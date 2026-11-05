@@ -10,6 +10,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
+Single Next.js app (not a monorepo). Package manager is **npm** (`package-lock.json`; don't introduce pnpm/yarn).
+
 ## Commands
 
 - `npm run dev` — dev server (Turbopack only)
@@ -18,6 +20,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - `npm run format` — `biome format --write`; for broader autofix use `npx @biomejs/biome check --write`
 - Typecheck: no script exists — run `npx tsc --noEmit`. Run `npm run dev` or `npm run build` first if route-type errors reference missing `.next/dev/types` files.
 - No test framework is installed.
+- No CI or pre-commit hooks — `npm run lint` + `npx tsc --noEmit` is the full verification loop.
+
+## Runtime dependencies (not obvious from code)
+
+- `.env` (git-ignored, not committed) must define: `MONGO_DB_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+- A separate backend API runs at `http://localhost:5000`, hardcoded as `API_BASE_URL` in `src/lib/api.ts` (used by auth sidebar components). Frontend features calling it fail unless that service is running.
+- Auth is **better-auth** + MongoDB: server config `src/lib/auth.ts` (db `studioSpaceDB`), client `src/lib/auth-client.ts`, catch-all handler `src/app/api/auth/[...all]/route.ts`. Next.js request interception uses `src/proxy.ts` (redirects logged-in users off `/login`, `/signup`).
 
 ## Next.js 16 gotchas (verified against node_modules/next/dist/docs)
 

@@ -10,6 +10,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { toast } from "react-toastify";
 import { signIn } from "@/lib/auth-client";
 
 function GoogleIcon() {
@@ -61,6 +62,8 @@ export function LoginForm() {
       });
       if (error) {
         errorMessage = error.message || "Google sign-in failed";
+      } else {
+        toast.success("Signed in with Google! Welcome back.");
       }
     } catch {
       errorMessage = "Google sign-in failed";
@@ -68,6 +71,7 @@ export function LoginForm() {
 
     if (errorMessage) {
       setStatus({ kind: "error", message: errorMessage });
+      toast.error(errorMessage);
     }
     setGooglePending(false);
   }
@@ -85,12 +89,17 @@ export function LoginForm() {
     });
 
     if (error) {
-      setStatus({ kind: "error", message: error.message || "Sign-in failed" });
+      const signInError = error.message || "Sign-in failed";
+      setStatus({ kind: "error", message: signInError });
+      toast.error(signInError);
       return;
     }
 
     setStatus({ kind: "success", message: "Welcome back! You are signed in." });
-    window.location.assign("/");
+    toast.success("Welcome back! You are signed in.");
+    window.setTimeout(() => {
+      window.location.assign("/");
+    }, 700);
 
     return resData;
   }
